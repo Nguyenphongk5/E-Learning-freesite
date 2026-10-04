@@ -61,6 +61,25 @@ body {
   color: #ffffff !important;
   border: none;
   border-radius: 33px;
+  white-space: nowrap;
+}
+
+.login-btn {
+  background-color: transparent;
+  color: #21b573 !important;
+  border: 1px solid #21b573;
+}
+
+.login-btn:hover {
+  color: #ffffff !important;
+}
+
+.auth-btn {
+  display: inline-block;
+  width: auto !important;
+  height: auto !important;
+  margin-bottom: 0;
+  text-align: center !important;
 }
 
 .nav-btn {
@@ -780,55 +799,6 @@ p{
   color: #21b573;
 }
 
-.carousel .carousel-control {
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  top: 50%;
-  background: none;
-}
-
-.carousel-control i {
-  font-size: 68px;
-  line-height: 42px;
-  position: absolute;
-  display: inline-block;
-  color: rgba(0, 0, 0, 0.8);
-  text-shadow: 0 3px 3px #e6e6e6, 0 0 0 #000;
-}
-
-.carousel .carousel-indicators {
-  bottom: -40px;
-}
-
-.carousel-indicators li,
-.carousel-indicators li.active {
-  width: 10px;
-  height: 10px;
-  margin: 1px 3px;
-  border-radius: 50%;
-}
-
-.carousel-indicators li {
-  background: #999;
-  border-color: transparent;
-  box-shadow: inset 0 2px 1px rgba(0, 0, 0, 0.2);
-}
-
-.carousel-indicators li.active {
-  background: rgb(122, 120, 120);
-  box-shadow: inset 0 2px 1px rgba(0, 0, 0, 0.2);
-}
-
-.darkmode-toggle {
-  z-index: 1031;
-}
-
-.nav-link {
-  display: flex;
-  width: 101px;
-}
-
 /* Books section */
 .books-section {
   padding-top: 80px;
@@ -1101,4 +1071,53 @@ p{
   .book-cover {
     min-height: 220px;
   }
+}
+
+.carousel .carousel-control {
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  top: 50%;
+  background: none;
+}
+
+.carousel-control i {
+  font-size: 68px;
+  line-height: 42px;
+  position: absolute;
+  display: inline-block;
+  color: rgba(0, 0, 0, 0.8);
+  text-shadow: 0 3px 3px #e6e6e6, 0 0 0 #000;
+}
+
+.carousel .carousel-indicators {
+  bottom: -40px;
+}
+
+.carousel-indicators li,
+.carousel-indicators li.active {
+  width: 10px;
+  height: 10px;
+  margin: 1px 3px;
+  border-radius: 50%;
+}
+
+.carousel-indicators li {
+  background: #999;
+  border-color: transparent;
+  box-shadow: inset 0 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-indicators li.active {
+  background: rgb(122, 120, 120);
+  box-shadow: inset 0 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+.darkmode-toggle {
+  z-index: 1031;
+}
+
+.nav-link {
+  display: flex;
+  width: 101px;
 }
