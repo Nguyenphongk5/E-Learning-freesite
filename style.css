@@ -55,12 +55,19 @@ body {
   text-align: center;
 }
 
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .nav-btn {
-  padding: 10px 28px !important;
-  background-color: #21b573;
+  padding: 8px 18px;
+  background-color: #2ece89;
   color: #ffffff !important;
   border: none;
-  border-radius: 33px;
+  border-radius: 20px;
+  white-space: nowrap;
 }
 
 .nav-btn {
@@ -146,6 +153,13 @@ p{
   border: 0px;
 }
 
+.navbar-nav .nav-link.nav-btn {
+  padding: 8px 18px !important;
+  background-color: #2ece89;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
 /* DONATE BUTTONS */
 
 .link {
@@ -218,6 +232,19 @@ p{
   border-radius: 18px;
 }
 
+.course-section .card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%;
+}
+
+.course-section .card-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
 .card:hover {
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
 }
@@ -235,11 +262,30 @@ p{
   margin-bottom: 3px;
 }
 
+.course-section .card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 72px;
+  overflow: hidden;
+}
+
 .card-body p {
   font-size: 16px;
   line-height: 24px;
   color: #585859;
   margin-bottom: 19px;
+}
+
+.course-section .card-body .nav-btn {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: 6px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
 }
 
 .buy-btn {
@@ -591,8 +637,6 @@ p{
   }
 
   .nav-btn {
-    width: 24%;
-    height: 15%;
     margin-bottom: 7px;
     text-align: center;
   }
