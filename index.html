@@ -12,6 +12,8 @@
         href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="registration.css">
+    <link rel="stylesheet" href="study-timer.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,700&display=swap"
         rel="stylesheet">
@@ -75,12 +77,20 @@
                             <a class="nav-link" href="#start-learning">Start Learning</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-btn get-btn" href="https://forms.gle/XRqaRiaLdNxh7Ykk6"
-                                target="_blank">Register</a>
+                            <a class="nav-link nav-btn get-btn" href="#register" data-open-registration>Register</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link nav-btn get-btn" href="https://www.buymeacoffee.com/sahityaroy"
                                 target="_blank">Support</a>
+                        </li>
+                        <li class="nav-item language-nav-item">
+                            <label class="language-picker mb-0">
+                                <span class="sr-only">Select language</span>
+                                <select id="languageSelect" aria-label="Select language">
+                                    <option value="en">English</option>
+                                    <option value="vi">Tiếng Việt</option>
+                                </select>
+                            </label>
                         </li>
                     </ul>
                 </div>
@@ -120,7 +130,6 @@
     ==============
     -->
     <section class="cards-section sec-padding">
-        <br>
         <div class="container">
             <div class="row">
                 <div class="col-md-6 col-lg-3 col-sm-6">
@@ -170,8 +179,7 @@
                         <h5 class="card-title">C++ From Basic To Advance</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Getting started with CPP</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ">Enroll</a>
+                        <a class="nav-link nav-btn" href="/courses/cpp-basic-to-advance" data-course-id="cpp">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -195,8 +203,7 @@
                         <h5 class="card-title">JAVA</h5>
                         <!-- <p class="card-text">Kickstart your journey in java</p> -->
                         <p class="card-text">Kickstart your journey in Java</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=WOUpjal8ee4&list=PLsyeobzWxl7oZ-fxDYkOToURHhMuWD1BK">Enroll</a>
+                        <a class="nav-link nav-btn" href="/courses/java-programming" data-course-id="java">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -218,8 +225,7 @@
                         <h5 class="card-title">C Programming</h5>
                         <!-- <p class="card-text">Kickstart you coding journey</p> -->
                         <p class="card-text">Kickstart you coding journey with C</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=MoqYPc43ssk&list=PLXthElPLs7ZaGXGI-_ToQ670nr1RAtjRB">Enroll</a>
+                        <a class="nav-link nav-btn" href="/courses/c-programming" data-course-id="c-programming">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -249,7 +255,7 @@
                         <h5 class="card-title">Python Programming</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Getting started with Python</p>
-                        <a class="nav-link nav-btn" href="https://www.youtube.com/watch?v=kqtD5dpn9C8">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="python-programming">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -275,8 +281,7 @@
                         <h5 class="card-title">Django Framework</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Master Django Skills</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=UmljXZIypDc&list=PL-osiE80TeTtoQCKZ03TU5fNfx2UY6U4p">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="django-framework">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -302,8 +307,7 @@
                         <h5 class="card-title">Html</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Learn HTML to create amazing web pages</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=dD2EISBDjWM&list=PLr6-GrHUlVf_ZNmuQSXdS197Oyr1L9sPB">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="html">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -335,8 +339,7 @@
                         <h5 class="card-title">CSS</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Design Amazing Web Pages with CSS</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=qKoajPPWpmo&list=PLr6-GrHUlVf8JIgLcu3sHigvQjTw_aC9C">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="css">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -362,8 +365,7 @@
                         <h5 class="card-title">Javascript</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Kickstart you coding journey in Scripting</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=2md4HQNRqJA&list=PLRAV69dS1uWSxUIk5o3vQY2-_VKsOpXLD">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="javascript">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -389,8 +391,7 @@
                         <h5 class="card-title">React JS</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Learn Amazing Front-end Framework</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=QFaFIcGhPoM&list=PLC3y8-rFHvwgg3vaYJgHGnModB54rxOk3">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="react-js">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -425,8 +426,7 @@
                         <h5 class="card-title">Kotlin</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Kickstart you coding journey in Kotlin</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=VEqhzCFmEQI&list=PLlxmoA0rQ-LwgK1JsnMsakYNACYGa1cjR">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="kotlin">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -452,8 +452,7 @@
                         <h5 class="card-title">Angular</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Head for Google's Framework</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=0eWrpsCLMJQ&list=PLC3y8-rFHvwhBRAgFinJR8KHIrCdTkZcZ">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="angular">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -480,8 +479,7 @@
                         <h5 class="card-title">SQL</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
                         <p class="card-text">Start Understanding Databases</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=7GVFYt6_ZFM&list=PL08903FB7ACA1C2FB">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="sql">Enroll</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
                     </div>
                     <div class="card-footer">
@@ -518,7 +516,7 @@
                     <div class="card-body">
                         <h5 class="card-title">Flutter</h5>
                         <p class="card-text">Kickstart you coding journey in Flutter</p>
-                        <a class="nav-link nav-btn" href="https://www.youtube.com/watch?v=VPvVD8t02U8">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="flutter">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -540,7 +538,7 @@
                     <div class="card-body">
                         <h5 class="card-title">PyTorch</h5>
                         <p class="card-text">Explore Machine Learning with PyTorch</p>
-                        <a class="nav-link nav-btn" href="https://www.youtube.com/watch?v=V_xro1bcAuA">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="pytorch">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -562,8 +560,7 @@
                     <div class="card-body">
                         <h5 class="card-title">PHP</h5>
                         <p class="card-text">Create Dynamic Websites with PHP</p>
-                        <a class="nav-link nav-btn"
-                            href="https://www.youtube.com/watch?v=7GVFYt6_ZFM&list=PL08903FB7ACA1C2FB">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="php">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -593,7 +590,7 @@
                     <div class="card-body">
                         <h5 class="card-title">Nest.Js</h5>
                         <p class="card-text">Create a REST API</p>
-                        <a class="nav-link nav-btn" href="https://www.youtube.com/watch?v=GHTA143_b-s">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="nest-js">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -615,7 +612,7 @@
                     <div class="card-body">
                         <h5 class="card-title">Tailwind CSS</h5>
                         <p class="card-text">Responsive Web Designs with Tailwind CSS</p>
-                        <a class="nav-link nav-btn" href="https://www.youtube.com/watch?v=lZp4salRFFc">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="tailwind-css">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -638,7 +635,7 @@
                     <div class="card-body">
                         <h5 class="card-title">Bootstrap</h5>
                         <p class="card-text">Create Interactive Websites with Bootstrap</p>
-                        <a class="nav-link nav-btn" href="https://www.youtube.com/watch?v=-qfEOE4vtxE">Enroll</a>
+                        <a class="nav-link nav-btn" href="#" data-course-id="bootstrap">Enroll</a>
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between">
@@ -834,6 +831,58 @@
         </div>
     </footer>
 
+    <div class="registration-modal" id="registrationModal" hidden>
+        <div class="registration-backdrop" data-close-registration></div>
+        <section class="registration-panel" role="dialog" aria-modal="true" aria-labelledby="registrationTitle">
+            <button class="registration-close" type="button" data-close-registration aria-label="Close registration">&times;</button>
+            <p class="registration-eyebrow" data-auth-copy="eyebrow">EDUHUB ACCOUNT</p>
+            <h2 id="registrationTitle" data-auth-copy="registerTitle">Create your account</h2>
+            <p class="registration-intro" data-auth-copy="intro">Save your learning progress and keep everything in one place.</p>
+            <div class="registration-socials">
+                <button type="button" class="registration-social" data-social-provider="google"><i class="fab fa-google" aria-hidden="true"></i><span data-auth-copy="google">Continue with Google</span></button>
+                <button type="button" class="registration-social" data-social-provider="facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i><span data-auth-copy="facebook">Continue with Facebook</span></button>
+            </div>
+            <div class="registration-divider"><span data-auth-copy="orEmail">or continue with email</span></div>
+            <form id="accountForm" novalidate>
+                <div class="registration-field" data-register-only>
+                    <label for="accountName" data-auth-copy="fullName">Full name</label>
+                    <input id="accountName" name="name" type="text" autocomplete="name" maxlength="100" data-auth-placeholder="namePlaceholder">
+                    <span class="registration-error" id="accountNameError" aria-live="polite"></span>
+                </div>
+                <div class="registration-field">
+                    <label for="accountEmail" data-auth-copy="email">Email address</label>
+                    <input id="accountEmail" name="email" type="email" autocomplete="email" maxlength="254" data-auth-placeholder="emailPlaceholder">
+                    <span class="registration-error" id="accountEmailError" aria-live="polite"></span>
+                </div>
+                <div class="registration-field">
+                    <label for="accountPassword" data-auth-copy="password">Password</label>
+                    <div class="registration-password-wrap">
+                        <input id="accountPassword" name="password" type="password" autocomplete="new-password" data-auth-placeholder="passwordPlaceholder">
+                        <button class="password-visibility" type="button" data-toggle-password="accountPassword" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="password-strength" data-register-only aria-live="polite"><span class="password-strength-track"><span></span></span><span class="password-strength-label" data-auth-copy="strengthEmpty">Use at least 8 characters</span></div>
+                    <span class="registration-error" id="accountPasswordError" aria-live="polite"></span>
+                </div>
+                <div class="registration-field" data-register-only>
+                    <label for="accountConfirmPassword" data-auth-copy="confirmPassword">Confirm password</label>
+                    <div class="registration-password-wrap">
+                        <input id="accountConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" data-auth-placeholder="confirmPlaceholder">
+                        <button class="password-visibility" type="button" data-toggle-password="accountConfirmPassword" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                    <span class="registration-error" id="accountConfirmPasswordError" aria-live="polite"></span>
+                </div>
+                <label class="registration-terms" data-register-only>
+                    <input id="accountTerms" type="checkbox" name="terms">
+                    <span data-auth-copy="terms">I agree to the Terms of Service and Privacy Policy.</span>
+                </label>
+                <span class="registration-error registration-terms-error" id="accountTermsError" aria-live="polite"></span>
+                <button class="registration-submit" type="submit"><span data-auth-copy="createAccount">Create account</span></button>
+                <p class="registration-status" id="accountStatus" role="status" aria-live="polite"></p>
+            </form>
+            <p class="registration-switch"><span data-auth-copy="haveAccount">Already have an account?</span> <button type="button" data-switch-auth-mode data-auth-copy="signIn">Sign in</button></p>
+        </section>
+    </div>
+
     <!-- Back to top button -->
     <button class="back-to-top" title="Back to top"><i class="fas fa-arrow-up"></i></button>
 
@@ -847,6 +896,9 @@
         integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
         crossorigin="anonymous"></script>
     <script src="main.js"></script>
+    <script src="study-timer.js"></script>
+    <script src="language.js"></script>
+    <script src="registration.js"></script>
     <script>
         $('.social-icons li').click(function () {
             $(this).toggleClass("shadow").siblings();
@@ -859,7 +911,9 @@
         function addDarkmodeWidget() {
 
             new Darkmode({
-                bottom: '687px',
+                bottom: '24px',
+                right: '24px',
+                left: 'unset',
                 time: '0.5s',
                 label: '🌓'
             }).showWidget();
