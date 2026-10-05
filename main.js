@@ -48,7 +48,19 @@ const translations = {
     'hero.heading': 'Học thật vui <br> theo <span>lịch của bạn</span>',
     'hero.text': 'Lập trình đang là một trong những lĩnh vực phát triển mạnh mẽ. Hãy học lập trình để nắm bắt cơ hội nghề nghiệp trong ngành công nghệ đang có nhu cầu nhân lực cao.',
     'hero.quiz': 'BÀI KIỂM TRA',
-    'hero.support': 'ỦNG HỘ'
+    'hero.support': 'ỦNG HỘ',
+    'books.eyebrow': 'GÓC SÁCH LẬP TRÌNH',
+    'books.title': 'Sách hay cho hành trình lập trình',
+    'books.subtitle': 'Tìm cuốn sách phù hợp và bắt đầu học theo cách của bạn.',
+    'books.searchLabel': 'Tìm sách theo tên hoặc tác giả',
+    'books.filterAll': 'Tất cả',
+    'books.filterPython': 'Python',
+    'books.filterJava': 'Java',
+    'books.filterWeb': 'Web',
+    'books.filterCs': 'Khoa học máy tính',
+    'courses.title': 'Các khóa học trực tuyến',
+    'course.cppTitle': 'C++ từ cơ bản đến nâng cao',
+    'course.cppText': 'Bắt đầu học lập trình C++'
   },
   en: {
     'nav.books': 'Books',
@@ -63,7 +75,19 @@ const translations = {
     'hero.heading': 'Learn with joy <br> on <span>your schedule</span>',
     'hero.text': 'Programming is one of the fastest-growing career fields. Learn to code and seize the opportunities in a technology industry with strong demand for skilled developers.',
     'hero.quiz': 'TAKE QUIZ',
-    'hero.support': 'SUPPORT'
+    'hero.support': 'SUPPORT',
+    'books.eyebrow': 'PROGRAMMING BOOKS',
+    'books.title': 'Great books for your coding journey',
+    'books.subtitle': 'Find the right book and start learning your own way.',
+    'books.searchLabel': 'Search by title or author',
+    'books.filterAll': 'All',
+    'books.filterPython': 'Python',
+    'books.filterJava': 'Java',
+    'books.filterWeb': 'Web',
+    'books.filterCs': 'Computer Science',
+    'courses.title': 'Online courses',
+    'course.cppTitle': 'C++ from beginner to advanced',
+    'course.cppText': 'Start learning C++ programming'
   }
 };
 

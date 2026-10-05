@@ -125,25 +125,25 @@
     <section class="books-section sec-padding" id="books">
         <div class="container">
             <div class="books-heading">
-                <p class="books-eyebrow">GÓC SÁCH LẬP TRÌNH</p>
-                <h2 class="text-center title-text">Sách hay cho hành trình lập trình</h2>
-                <p class="books-intro">Tìm cuốn sách phù hợp và bắt đầu học theo cách của bạn.</p>
+                <p class="books-eyebrow" data-i18n="books.eyebrow">GÓC SÁCH LẬP TRÌNH</p>
+                <h2 class="text-center title-text" data-i18n="books.title">Sách hay cho hành trình lập trình</h2>
+                <p class="books-intro" data-i18n="books.subtitle">Tìm cuốn sách phù hợp và bắt đầu học theo cách của bạn.</p>
             </div>
             <div class="books-toolbar">
-                <label class="sr-only" for="book-search">Tìm sách theo tên hoặc tác giả</label>
+                <label class="sr-only" for="book-search" data-i18n="books.searchLabel">Tìm sách theo tên hoặc tác giả</label>
                 <input id="book-search" class="book-search" type="search"
                     placeholder="Tìm theo tên sách hoặc tác giả..." autocomplete="off">
                 <div class="book-filters" role="group" aria-label="Lọc sách theo danh mục">
                     <button class="book-filter is-active" type="button" data-book-filter="all"
-                        aria-pressed="true">Tất cả</button>
+                        aria-pressed="true" data-i18n="books.filterAll">Tất cả</button>
                     <button class="book-filter" type="button" data-book-filter="python"
-                        aria-pressed="false">Python</button>
+                        aria-pressed="false" data-i18n="books.filterPython">Python</button>
                     <button class="book-filter" type="button" data-book-filter="java"
-                        aria-pressed="false">Java</button>
+                        aria-pressed="false" data-i18n="books.filterJava">Java</button>
                     <button class="book-filter" type="button" data-book-filter="web"
-                        aria-pressed="false">Web</button>
+                        aria-pressed="false" data-i18n="books.filterWeb">Web</button>
                     <button class="book-filter" type="button" data-book-filter="cs"
-                        aria-pressed="false">Khoa học máy tính</button>
+                        aria-pressed="false" data-i18n="books.filterCs">Khoa học máy tính</button>
                 </div>
             </div>
             <p class="book-results" id="book-results" aria-live="polite"></p>
@@ -329,15 +329,15 @@
     -->
     <section class="course-section sec-padding" id="course">
         <div class="container">
-            <h2 class="text-center title-text">Các khóa học trực tuyến</h2>
+            <h2 class="text-center title-text" data-i18n="courses.title">Các khóa học trực tuyến</h2>
             <div class="card-deck">
                 <div class="card">
                     <img src="images/picture/card-1.png" class="card-img-top" alt="...">
                     <div class="card-body">
                         <!-- <h5 class="card-title">C++ From Basic To advance</h5> -->
-                        <h5 class="card-title">C++ từ cơ bản đến nâng cao</h5>
+                        <h5 class="card-title" data-i18n="course.cppTitle">C++ từ cơ bản đến nâng cao</h5>
                         <!-- <p class="card-text">Geeting started with CPP</p> -->
-                        <p class="card-text">Bắt đầu học lập trình C++</p>
+                        <p class="card-text" data-i18n="course.cppText">Bắt đầu học lập trình C++</p>
                         <a class="nav-link nav-btn"
                             href="https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ">Học ngay</a>
                         <!--<button class="buy-btn" herf "https://www.youtube.com/watch?v=z9bZufPHFLU&list=PLfqMhTWNBTe0b2nM6JHVCnAkhQRGiZMSJ"></button>Enroll</button> -->
