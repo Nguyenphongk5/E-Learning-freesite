@@ -59,34 +59,33 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ml-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="#books">Sách</a>
+                            <a class="nav-link" href="#books" data-i18n="nav.books">Sách</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="https://sahityaroy.hashnode.dev/" target="_blank">Bài viết</a>
+                            <a class="nav-link" href="https://sahityaroy.hashnode.dev/" target="_blank" data-i18n="nav.articles">Bài viết</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="./blog.html" target="_blank">Viết bài</a>
+                            <a class="nav-link" href="./blog.html" target="_blank" data-i18n="nav.write">Viết bài</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#course">Khóa học</a>
+                            <a class="nav-link" href="#course" data-i18n="nav.courses">Khóa học</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#start-learning">Bắt đầu học</a>
+                            <a class="nav-link" href="#start-learning" data-i18n="nav.start">Bắt đầu học</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-btn auth-btn login-btn" href="#dang-nhap" data-toggle="modal"
-                                data-target="#dang-nhap">Đăng nhập</a>
+                            <a class="nav-link" href="quiz.html" data-i18n="nav.quiz">Quiz</a>
                         </li>
+
                         <li class="nav-item">
-                            <a class="nav-link nav-btn auth-btn login-btn" href="#dang-nhap" data-toggle="modal"
-                                data-target="#dang-nhap">Đăng nhập</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link nav-btn get-btn auth-btn" href="auth.html">Đăng ký</a>
+                            <a class="nav-link nav-btn get-btn auth-btn" href="auth.html" data-i18n="nav.signup">Đăng ký</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link nav-btn get-btn support-btn" href="https://www.buymeacoffee.com/sahityaroy"
-                                target="_blank">Ủng hộ</a>
+                                target="_blank" data-i18n="nav.support">Ủng hộ</a>
+                        </li>
+                        <li class="nav-item">
+                            <button id="langToggle" class="lang-toggle" type="button" aria-label="Switch to English">EN</button>
                         </li>
                     </ul>
                 </div>
@@ -103,13 +102,16 @@
             <div class="row">
                 <div class="col-lg-5 col-md-12">
                     <div class="header-details">
-                        <h6>BẠN ĐÃ SẴN SÀNG HỌC CHƯA?</h6>
-                        <h1>Học thật vui <br> theo <span>lịch của bạn</span></h1>
+                        <h6 data-i18n="hero.ready">BẠN ĐÃ SẴN SÀNG HỌC CHƯA?</h6>
+                        <h1 data-i18n="hero.heading">Học thật vui <br> theo <span>lịch của bạn</span></h1>
                         <!-- <p>Now a days programming is one of the booming career industry needs good programmers so you have to learn programming</p> -->
-                        <p>Lập trình đang là một trong những lĩnh vực phát triển mạnh mẽ. Hãy học lập trình để nắm bắt
+                        <p data-i18n="hero.text">Lập trình đang là một trong những lĩnh vực phát triển mạnh mẽ. Hãy học lập trình để nắm bắt
                             cơ hội nghề nghiệp trong ngành công nghệ đang có nhu cầu nhân lực cao.</p>
-                        <button class="get-btn"><a href="https://www.buymeacoffee.com/sahityaroy" target="_blank"
-                                class="link">ỦNG HỘ</a></button>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="get-btn"><a href="quiz.html" class="link" data-i18n="hero.quiz">BÀI KIỂM TRA</a></button>
+                            <button class="get-btn"><a href="https://www.buymeacoffee.com/sahityaroy" target="_blank"
+                                    class="link" data-i18n="hero.support">ỦNG HỘ</a></button>
+                        </div>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-12 ml-auto">
