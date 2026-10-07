@@ -142,3 +142,14 @@ The login, account roles, and course management require the Flask backend; openi
 Accounts and courses are stored in `instance/elearning.sqlite3`; set `DATABASE_PATH` to move the database. The existing Azure Static Web Apps workflow deploys static files and does not run this Flask application. Deploy the Flask app and its persistent SQLite storage to a Python-capable host before using it outside local development.
 
 Course images can be uploaded by an administrator as PNG, JPG, GIF, or WebP files up to 5 MB. Uploaded files are stored under `instance/uploads` by default; set `UPLOAD_FOLDER` to use another persistent directory.
+
+## Project layout
+
+- `app.py` contains the Flask application factory. HTML views live in `templates/` and keep their existing public URL paths.
+- `controllers.py` contains page/API routes; `models.py` owns SQLite setup, data access, and validation; `templates/` contains the HTML views.
+- `assets/css` and `assets/js` contain stylesheets and browser scripts.
+- `images` contains site images and icons.
+- `blogs`, `courses`, and `Contributor` contain their respective page groups.
+- `tests` contains backend tests; `docs` contains archived page drafts, notes, and snippets.
+- `scripts/build_static.py` exports templates and assets to `build/` for Azure Static Web Apps.
+- `instance` is runtime data and is intentionally excluded from version control.

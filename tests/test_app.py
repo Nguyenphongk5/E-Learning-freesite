@@ -1,11 +1,13 @@
 from io import BytesIO
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image
 
-from app import create_app
+from app import create_app, load_secret_key
 
 
 class AuthenticationAndCourseApiTests(unittest.TestCase):
@@ -43,6 +45,10 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         response = self.register_user()
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json["role"], "user")
+        with self.client.session_transaction() as user_session:
+            self.assertTrue(user_session.permanent)
+            user_id = user_session["user_id"]
+        self.assertEqual(response.json["id"], user_id)
 
         duplicate = self.client.post("/api/auth/register", json={
             "name": "Another Student",
@@ -50,6 +56,31 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "password": "StudentPassword123",
         })
         self.assertEqual(duplicate.status_code, 409)
+
+    def test_login_restores_account_name_from_permanent_session(self):
+        self.register_user()
+        self.client.post("/api/auth/logout")
+
+        response = self.client.post("/api/auth/login", json={
+            "email": "student@example.com",
+            "password": "StudentPassword123",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["name"], "Student")
+        with self.client.session_transaction() as user_session:
+            self.assertTrue(user_session.permanent)
+            self.assertEqual(user_session["user_id"], response.json["id"])
+
+        current_account = self.client.get("/api/auth/me")
+        self.assertEqual(current_account.status_code, 200)
+        self.assertEqual(current_account.json["name"], "Student")
+
+    def test_default_session_signing_key_is_stable(self):
+        with patch.dict(os.environ, {"SECRET_KEY": ""}):
+            first_key = load_secret_key(self.temp_dir.name)
+            second_key = load_secret_key(self.temp_dir.name)
+        self.assertEqual(first_key, second_key)
+        self.assertEqual(len(first_key), 64)
 
     def test_course_changes_require_admin_role(self):
         self.assertEqual(self.client.post("/api/courses", json={}).status_code, 401)
@@ -111,6 +142,27 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.login_admin()
         response = self.client.post("/api/courses", json=["not", "a", "course"])
         self.assertEqual(response.status_code, 400)
+
+    def test_mvc_templates_keep_existing_page_urls_and_static_assets(self):
+        for path in (
+            "/",
+            "/admin.html",
+            "/blog.html",
+            "/blogs/blog1.html",
+            "/courses/cpp-basic-to-advance/index.html",
+            "/Contributor/index2.html",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 200)
+
+        for path in (
+            "/assets/css/admin-dashboard.css",
+            "/assets/js/auth.js",
+            "/images/logo.svg",
+        ):
+            with self.subTest(path=path):
+                with self.client.get(path) as response:
+                    self.assertEqual(response.status_code, 200)
 
     def test_course_image_upload_is_admin_only_and_validates_image_data(self):
         png = BytesIO()
