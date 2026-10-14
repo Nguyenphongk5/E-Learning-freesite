@@ -49,6 +49,23 @@ const translations = {
     'hero.text': 'Lập trình đang là một trong những lĩnh vực phát triển mạnh mẽ. Hãy học lập trình để nắm bắt cơ hội nghề nghiệp trong ngành công nghệ đang có nhu cầu nhân lực cao.',
     'hero.quiz': 'BÀI KIỂM TRA',
     'hero.support': 'ỦNG HỘ',
+    'carousel.label': 'Khóa học nổi bật',
+    'carousel.cppEyebrow': 'LẬP TRÌNH C++',
+    'carousel.cppTitle': 'Bắt đầu hành trình lập trình của bạn',
+    'carousel.cppText': 'Nắm vững nền tảng C++ qua những bài học dễ hiểu và thực hành từng bước.',
+    'carousel.javaEyebrow': 'LẬP TRÌNH JAVA',
+    'carousel.javaTitle': 'Chinh phục Java từ những bước đầu tiên',
+    'carousel.javaText': 'Học tư duy hướng đối tượng và xây dựng nền tảng vững chắc cho ứng dụng thực tế.',
+    'carousel.pythonEyebrow': 'LẬP TRÌNH PYTHON',
+    'carousel.pythonTitle': 'Khám phá Python qua những dự án thực tế',
+    'carousel.pythonText': 'Học Python với các bài thực hành trực quan, từ nền tảng đến ứng dụng thực tế.',
+    'carousel.cta': 'Khám phá ngay',
+    'carousel.previous': 'Trang trước',
+    'carousel.next': 'Trang tiếp theo',
+    'carousel.indicators': 'Chọn khóa học',
+    'carousel.goToCpp': 'Đến khóa học C++',
+    'carousel.goToJava': 'Đến khóa học Java',
+    'carousel.goToPython': 'Đến khóa học Python',
     'books.eyebrow': 'GÓC SÁCH LẬP TRÌNH',
     'books.title': 'Sách hay cho hành trình lập trình',
     'books.subtitle': 'Tìm cuốn sách phù hợp và bắt đầu học theo cách của bạn.',
@@ -76,6 +93,23 @@ const translations = {
     'hero.text': 'Programming is one of the fastest-growing career fields. Learn to code and seize the opportunities in a technology industry with strong demand for skilled developers.',
     'hero.quiz': 'TAKE QUIZ',
     'hero.support': 'SUPPORT',
+    'carousel.label': 'Featured courses',
+    'carousel.cppEyebrow': 'C++ PROGRAMMING',
+    'carousel.cppTitle': 'Start your programming journey',
+    'carousel.cppText': 'Build a strong C++ foundation with clear lessons and hands-on practice.',
+    'carousel.javaEyebrow': 'JAVA PROGRAMMING',
+    'carousel.javaTitle': 'Master Java from the very beginning',
+    'carousel.javaText': 'Learn object-oriented thinking and build a solid foundation for real-world applications.',
+    'carousel.pythonEyebrow': 'PYTHON PROGRAMMING',
+    'carousel.pythonTitle': 'Explore Python through real-world projects',
+    'carousel.pythonText': 'Learn Python with hands-on lessons, from the fundamentals to practical applications.',
+    'carousel.cta': 'Explore now',
+    'carousel.previous': 'Previous slide',
+    'carousel.next': 'Next slide',
+    'carousel.indicators': 'Choose a course',
+    'carousel.goToCpp': 'Go to C++ course',
+    'carousel.goToJava': 'Go to Java course',
+    'carousel.goToPython': 'Go to Python course',
     'books.eyebrow': 'PROGRAMMING BOOKS',
     'books.title': 'Great books for your coding journey',
     'books.subtitle': 'Find the right book and start learning your own way.',
@@ -95,12 +129,18 @@ function applyTranslations(lang) {
   const translationSet = translations[lang] || translations.vi;
   document.documentElement.lang = lang;
 
-  document.querySelectorAll('[data-i18n]').forEach((element) => {
+  document.querySelectorAll('[data-i18n], [data-i18n-aria-label]').forEach((element) => {
     const key = element.dataset.i18n;
     const value = translationSet[key];
-    if (!value) return;
 
-    element.innerHTML = value;
+    if (key && value) {
+      element.innerHTML = value;
+    }
+
+    const ariaLabelKey = element.dataset.i18nAriaLabel;
+    if (ariaLabelKey && translationSet[ariaLabelKey]) {
+      element.setAttribute('aria-label', translationSet[ariaLabelKey]);
+    }
   });
 
   if (langToggle) {
@@ -118,6 +158,97 @@ if (langToggle) {
   });
 
   applyTranslations(currentLang);
+}
+
+const courseCarousel = document.querySelector('#course-carousel');
+
+if (courseCarousel) {
+  const slides = Array.from(courseCarousel.querySelectorAll('.course-slide'));
+  const indicators = Array.from(courseCarousel.querySelectorAll('[data-slide-to]'));
+  const previousButton = courseCarousel.querySelector('.course-carousel__arrow--prev');
+  const nextButton = courseCarousel.querySelector('.course-carousel__arrow--next');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let activeSlide = 0;
+  let autoplayTimer;
+  let isHovered = false;
+  let isFocused = false;
+
+  function stopAutoplay() {
+    window.clearInterval(autoplayTimer);
+    autoplayTimer = undefined;
+  }
+
+  function startAutoplay() {
+    stopAutoplay();
+    if (slides.length < 2 || isHovered || isFocused || document.hidden || reducedMotion.matches) return;
+
+    autoplayTimer = window.setInterval(() => {
+      setActiveSlide(activeSlide + 1);
+    }, 4500);
+  }
+
+  function setActiveSlide(index) {
+    activeSlide = (index + slides.length) % slides.length;
+    const activeImage = slides[activeSlide].querySelector('.banner-bg');
+    if (activeImage && activeImage.loading === 'lazy') {
+      activeImage.loading = 'eager';
+    }
+
+    slides.forEach((slide, slideIndex) => {
+      const isActive = slideIndex === activeSlide;
+      slide.classList.toggle('is-active', isActive);
+      slide.setAttribute('aria-hidden', String(!isActive));
+    });
+
+    indicators.forEach((indicator, indicatorIndex) => {
+      const isActive = indicatorIndex === activeSlide;
+      indicator.classList.toggle('is-active', isActive);
+      indicator.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
+  previousButton.addEventListener('click', () => {
+    setActiveSlide(activeSlide - 1);
+    startAutoplay();
+  });
+
+  nextButton.addEventListener('click', () => {
+    setActiveSlide(activeSlide + 1);
+    startAutoplay();
+  });
+
+  indicators.forEach((indicator) => {
+    indicator.addEventListener('click', () => {
+      setActiveSlide(Number(indicator.dataset.slideTo));
+      startAutoplay();
+    });
+  });
+
+  courseCarousel.addEventListener('mouseenter', () => {
+    isHovered = true;
+    stopAutoplay();
+  });
+
+  courseCarousel.addEventListener('mouseleave', () => {
+    isHovered = false;
+    startAutoplay();
+  });
+
+  courseCarousel.addEventListener('focusin', () => {
+    isFocused = true;
+    stopAutoplay();
+  });
+
+  courseCarousel.addEventListener('focusout', (event) => {
+    if (!courseCarousel.contains(event.relatedTarget)) {
+      isFocused = false;
+      startAutoplay();
+    }
+  });
+
+  document.addEventListener('visibilitychange', startAutoplay);
+  reducedMotion.addEventListener('change', startAutoplay);
+  startAutoplay();
 }
 
 if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
