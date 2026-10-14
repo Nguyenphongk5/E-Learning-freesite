@@ -17,11 +17,13 @@ function showMessage(element, text, success = false) {
     element.classList.toggle("is-success", success);
 }
 
-function initAuthPage() {
+async function initAuthPage() {
     const loginForm = document.getElementById("login-form");
     if (!loginForm) return;
 
     const registerForm = document.getElementById("register-form");
+    const googleButton = document.getElementById("google-login-button");
+    const googleMessage = document.getElementById("google-login-message");
     const isRegister = new URLSearchParams(location.search).get("view") === "register";
     document.getElementById("form-title").textContent = isRegister ? "Tạo tài khoản học viên" : "Chào mừng trở lại";
     document.getElementById("form-intro").textContent = isRegister
@@ -31,6 +33,48 @@ function initAuthPage() {
     registerForm.hidden = !isRegister;
     document.getElementById("login-footer").hidden = isRegister;
     document.getElementById("register-footer").hidden = !isRegister;
+
+    try {
+        const { client_id: googleClientId } = await apiRequest("/api/auth/google-config");
+        if (!googleClientId) {
+            googleButton.disabled = true;
+            showMessage(googleMessage, "Chưa cấu hình Client ID của Google.");
+        } else {
+            const waitForGoogleIdentity = async () => {
+                for (let attempt = 0; attempt < 50; attempt += 1) {
+                    if (window.google?.accounts?.id) return;
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+                throw new Error("Không thể tải Google Identity Services.");
+            };
+
+            await waitForGoogleIdentity();
+            window.google.accounts.id.initialize({
+                client_id: googleClientId,
+                callback: async ({ credential }) => {
+                    googleButton.disabled = true;
+                    googleButton.textContent = "Đang đăng nhập...";
+                    try {
+                        const account = await apiRequest("/api/auth/google", {
+                            method: "POST",
+                            body: JSON.stringify({ credential }),
+                        });
+                        location.href = account.role === "admin" ? "admin.html" : "index.html";
+                    } catch (error) {
+                        showMessage(googleMessage, error.message);
+                    } finally {
+                        googleButton.disabled = false;
+                        googleButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5a4.7 4.7 0 0 1-2 3.1l3.2 2.5A10.6 10.6 0 0 0 22 12c0-.8-.1-1.6-.3-2.3H12Z"/><path fill="#34A853" d="M12 22a9.5 9.5 0 0 0 6.6-2.4l-3.2-2.5a6 0 0 1-8.8-3.1l-3.2 2.5A10 10 0 0 0 12 22Z"/><path fill="#4A90E2" d="M5.6 14a6 6 0 0 1 0-4l-3.2-2.5a10 10 0 0 0 0 9L5.6 14Z"/><path fill="#FBBC05" d="M12 6.1a5.4 5.4 0 0 1 3.8 1.5l2.9-2.9A9.7 9.7 0 0 0 12 2a10 10 0 0 0-8.6 4.5L6.8 9a6 6 0 0 1 5.2-2.9Z"/></svg>Đăng nhập bằng Google';
+                    }
+                },
+            });
+            window.google.accounts.id.renderButton(googleButton, { theme: "outline", size: "large", width: 300 });
+        }
+    } catch (error) {
+        googleButton.disabled = true;
+        showMessage(googleMessage, error.message);
+    }
+
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const message = document.getElementById("login-message");

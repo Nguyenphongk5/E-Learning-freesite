@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/auth.css">
+    <script src="https://accounts.google.com/gsi/client" defer></script>
     <script src="assets/js/auth.js" defer></script>
 </head>
 <body>
@@ -51,6 +52,13 @@
                     <p class="form-message" id="register-message" role="status" aria-live="polite"></p>
                     <button class="primary-button" type="submit">Tạo tài khoản <span aria-hidden="true">→</span></button>
                 </form>
+
+                <div class="google-login-divider"><span>hoặc</span></div>
+                <button class="google-button" id="google-login-button" type="button" aria-describedby="google-login-message">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5a4.7 4.7 0 0 1-2 3.1l3.2 2.5A10.6 10.6 0 0 0 22 12c0-.8-.1-1.6-.3-2.3H12Z"/><path fill="#34A853" d="M12 22a9.5 9.5 0 0 0 6.6-2.4l-3.2-2.5a6 6 0 0 1-8.8-3.1l-3.2 2.5A10 10 0 0 0 12 22Z"/><path fill="#4A90E2" d="M5.6 14a6 6 0 0 1 0-4l-3.2-2.5a10 10 0 0 0 0 9L5.6 14Z"/><path fill="#FBBC05" d="M12 6.1a5.4 5.4 0 0 1 3.8 1.5l2.9-2.9A9.7 9.7 0 0 0 12 2a10 10 0 0 0-8.6 4.5L6.8 9a6 6 0 0 1 5.2-2.9Z"/></svg>
+                    Đăng nhập bằng Google
+                </button>
+                <p class="form-message" id="google-login-message" role="status" aria-live="polite"></p>
 
                 <p class="form-footer" id="login-footer">Chưa có tài khoản? <a href="auth.html?view=register">Đăng ký miễn phí</a></p>
                 <p class="form-footer" id="register-footer" hidden>Đã có tài khoản? <a href="auth.html">Đăng nhập</a></p>

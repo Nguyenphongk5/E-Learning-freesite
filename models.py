@@ -50,6 +50,7 @@ def initialize_database(app):
             name TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE COLLATE NOCASE,
             password_hash TEXT NOT NULL,
+            google_id TEXT UNIQUE,
             role TEXT NOT NULL CHECK (role IN ('user', 'admin')),
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -68,6 +69,15 @@ def initialize_database(app):
             "INSERT INTO courses (title, description, image_url, course_url) VALUES (?, ?, ?, ?)",
             DEFAULT_COURSES,
         )
+
+    user_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(users)")
+    }
+    if "google_id" not in user_columns:
+        connection.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)"
+    )
 
     admin_email = app.config["BOOTSTRAP_ADMIN_EMAIL"]
     admin_password = app.config["BOOTSTRAP_ADMIN_PASSWORD"]
@@ -132,6 +142,12 @@ def validate_course(data):
 def find_user_by_email(email):
     return get_database().execute(
         "SELECT * FROM users WHERE email = ? COLLATE NOCASE", (email,)
+    ).fetchone()
+
+
+def find_user_by_google_id(google_id):
+    return get_database().execute(
+        "SELECT * FROM users WHERE google_id = ?", (google_id,)
     ).fetchone()
 
 

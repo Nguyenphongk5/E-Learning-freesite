@@ -6,6 +6,9 @@ from io import BytesIO
 from pathlib import Path
 
 from flask import Blueprint, current_app, g, jsonify, render_template, request, send_from_directory, session
+from google.auth.exceptions import InvalidValue, TransportError
+from google.oauth2 import id_token
+from google.auth.transport.requests import Request
 from PIL import Image, UnidentifiedImageError
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -14,7 +17,9 @@ from models import (
     create_user,
     delete_course,
     find_user_by_email,
+    find_user_by_google_id,
     get_course_by_id,
+    get_database,
     get_user_by_id,
     list_accounts,
     list_courses,
@@ -70,6 +75,11 @@ def current_account():
     return jsonify(public_account(g.current_user))
 
 
+@api_routes.get("/api/auth/google-config")
+def google_config():
+    return jsonify({"client_id": current_app.config.get("GOOGLE_CLIENT_ID", "")})
+
+
 @api_routes.post("/api/auth/register")
 def register():
     data = json_payload()
@@ -103,6 +113,58 @@ def login():
     user = find_user_by_email(email)
     if not user or not check_password_hash(user["password_hash"], password):
         return api_error("Email hoặc mật khẩu không chính xác.", 401)
+
+    session.clear()
+    session.permanent = True
+    session["user_id"] = user["id"]
+    return jsonify(public_account(user))
+
+
+def verify_google_id_token(credential):
+    client_id = current_app.config.get("GOOGLE_CLIENT_ID", "").strip()
+    if not client_id:
+        return None
+    try:
+        return id_token.verify_oauth2_token(
+            credential,
+            Request(),
+            audience=client_id,
+        )
+    except (InvalidValue, TransportError, ValueError):
+        return None
+
+
+@api_routes.post("/api/auth/google")
+def google_login():
+    data = json_payload()
+    credential = str(data.get("credential", "")).strip()
+    google_user = verify_google_id_token(credential)
+    if not google_user:
+        return api_error("Xác thực Google không thành công.", 401)
+
+    google_id = str(google_user.get("sub", ""))
+    email = normalize_email(google_user.get("email", ""))
+    name = str(google_user.get("name", "")).strip() or email.split("@", 1)[0]
+    if not google_id or not valid_email(email):
+        return api_error("Google trả về thông tin tài khoản không hợp lệ.", 401)
+
+    user = find_user_by_google_id(google_id)
+    if not user:
+        user = find_user_by_email(email)
+        if user:
+            get_database().execute(
+                "UPDATE users SET google_id = ?, name = ? WHERE id = ?",
+                (google_id, name, user["id"]),
+            )
+            get_database().commit()
+            user = get_user_by_id(user["id"])
+        else:
+            user_id = create_user(name, email, generate_password_hash(google_id), "user")
+            get_database().execute(
+                "UPDATE users SET google_id = ? WHERE id = ?", (google_id, user_id)
+            )
+            get_database().commit()
+            user = get_user_by_id(user_id)
 
     session.clear()
     session.permanent = True
@@ -207,6 +269,11 @@ def create_admin():
 @page_routes.get("/")
 def homepage():
     return render_template("index.html")
+
+
+@page_routes.get("/auth.html")
+def auth_page():
+    return render_template("auth.html", google_client_id=current_app.config.get("GOOGLE_CLIENT_ID", ""))
 
 
 @page_routes.get("/uploads/<path:filename>")

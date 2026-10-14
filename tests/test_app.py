@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from PIL import Image
 
+import controllers
 from app import create_app, load_secret_key
 
 
@@ -136,6 +137,22 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "password": "wrong-password",
         })
         self.assertEqual(response.status_code, 401)
+
+    def test_google_login_creates_and_authenticates_account(self):
+        google_user = {
+            "email": "google-user@example.com",
+            "name": "Google Student",
+            "sub": "google-sub-123",
+        }
+        with patch.object(controllers, "verify_google_id_token", return_value=google_user):
+            response = self.client.post("/api/auth/google", json={"credential": "valid-token"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["email"], google_user["email"])
+        self.assertEqual(response.json["name"], google_user["name"])
+        self.assertEqual(response.json["role"], "user")
+        with self.client.session_transaction() as user_session:
+            self.assertIn("user_id", user_session)
 
     def test_invalid_json_shapes_return_validation_errors(self):
         self.assertEqual(self.client.post("/api/auth/register", json=["not", "an", "object"]).status_code, 400)
