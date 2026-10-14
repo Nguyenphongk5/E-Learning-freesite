@@ -255,6 +255,11 @@ if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
   const bookCards = Array.from(bookGrid.querySelectorAll('.book-card'));
   let activeCategory = 'all';
 
+  if (bookCards.length === 0) {
+    bookResults.hidden = true;
+    bookEmpty.hidden = true;
+  }
+
   function filterBooks() {
     const searchTerm = bookSearch.value.trim().toLocaleLowerCase();
     let visibleCount = 0;
@@ -272,7 +277,8 @@ if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
     });
 
     bookResults.textContent = `Hiển thị ${visibleCount} trong ${bookCards.length} cuốn sách`;
-    bookEmpty.hidden = visibleCount > 0;
+    bookResults.hidden = bookCards.length === 0;
+    bookEmpty.hidden = bookCards.length === 0 || visibleCount > 0;
   }
 
   bookFilters.forEach((filter) => {

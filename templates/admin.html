@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/admin-dashboard.css">
     <script src="assets/js/auth.js" defer></script>
@@ -26,13 +27,16 @@
 
         <nav class="flex-1 overflow-y-auto px-4 py-6" aria-label="Điều hướng quản trị">
             <p class="px-3 pb-3 text-[10px] font-bold tracking-[0.18em] text-[#b4a8b1]">WORKSPACE</p>
-            <a class="sidebar-link sidebar-link-active" href="admin.html" aria-current="page">
+            <a class="sidebar-link sidebar-link-active" href="/admin.html" aria-current="page">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Tổng quan</span>
             </a>
-            <a class="sidebar-link" href="admin-courses.html">
+            <a class="sidebar-link" href="/admin-courses.html">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 10.2v5.3c2.7 2.5 7.3 2.5 10 0v-5.3M21 8v6"/></svg><span>Khóa học</span><span id="sidebar-course-count" class="sidebar-count">0</span>
             </a>
-            <a class="sidebar-link" href="admin-accounts.html">
+            <a href="/admin/books" class="nav-item sidebar-link">
+                <i class="fa-solid fa-book" aria-hidden="true"></i> Quản lý sách
+            </a>
+            <a class="sidebar-link" href="/admin-accounts.html">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>Tài khoản</span>
             </a>
             <p class="px-3 pb-3 pt-8 text-[10px] font-bold tracking-[0.18em] text-[#b4a8b1]">CÔNG CỤ</p>
@@ -80,16 +84,18 @@
                 <a href="admin-course-form.html" class="add-course-button"><span aria-hidden="true">＋</span> Thêm khóa học</a>
             </section>
 
-            <section class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Số liệu tổng quan">
+            <section class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Số liệu tổng quan">
                 <article class="metric-card"><div class="flex items-start justify-between"><span class="metric-label">Tổng khóa học</span><span class="metric-icon metric-icon-pink"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 10.2v5.3c2.7 2.5 7.3 2.5 10 0v-5.3M21 8v6"/></svg></span></div><div class="mt-5 flex items-end justify-between"><strong id="course-count" class="metric-value">0</strong><span class="metric-caption">Trong thư viện</span></div></article>
+                <article class="metric-card"><div class="flex items-start justify-between"><span class="metric-label">Tổng số sách</span><span class="metric-icon metric-icon-orange"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5v-12Z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h8M8 10h6"/></svg></span></div><div class="mt-5 flex items-end justify-between"><strong id="book-count" class="metric-value">0</strong><span class="metric-caption">Trong thư viện</span></div></article>
                 <article class="metric-card"><div class="flex items-start justify-between"><span class="metric-label">Học viên</span><span class="metric-icon metric-icon-blue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg></span></div><div class="mt-5 flex items-end justify-between"><strong id="user-count" class="metric-value">0</strong><span class="metric-caption">Tài khoản học viên</span></div></article>
-                <article class="metric-card sm:col-span-2 xl:col-span-1"><div class="flex items-start justify-between"><span class="metric-label">Quản trị viên</span><span class="metric-icon metric-icon-orange"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span></div><div class="mt-5 flex items-end justify-between"><strong id="admin-count" class="metric-value">0</strong><span class="metric-caption">Tài khoản có quyền quản trị</span></div></article>
+                <article class="metric-card"><div class="flex items-start justify-between"><span class="metric-label">Quản trị viên</span><span class="metric-icon metric-icon-orange"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span></div><div class="mt-5 flex items-end justify-between"><strong id="admin-count" class="metric-value">0</strong><span class="metric-caption">Tài khoản có quyền quản trị</span></div></article>
             </section>
 
             <section aria-labelledby="workspace-heading">
                 <div class="mb-4"><p class="section-kicker">KHÔNG GIAN LÀM VIỆC</p><h2 id="workspace-heading" class="section-title">Chọn khu vực quản lý</h2></div>
-                <div class="grid gap-4 xl:grid-cols-3">
+                <div class="grid gap-4 xl:grid-cols-4">
                     <a class="management-card" href="admin-courses.html"><span class="management-icon metric-icon-pink"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 10.2v5.3c2.7 2.5 7.3 2.5 10 0v-5.3M21 8v6"/></svg></span><span class="management-copy"><strong>Khóa học</strong><small><span id="overview-course-count">0</span> khóa học trong thư viện</small></span><span class="management-arrow" aria-hidden="true">↗</span></a>
+                    <a class="management-card" href="/admin/books"><span class="management-icon metric-icon-orange"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5v-12Z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h8M8 10h6"/></svg></span><span class="management-copy"><strong>Quản lý sách</strong><small><span id="overview-book-count">0</span> sách trong thư viện</small></span><span class="management-arrow" aria-hidden="true">↗</span></a>
                     <a class="management-card" href="admin-accounts.html"><span class="management-icon metric-icon-blue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg></span><span class="management-copy"><strong>Tài khoản</strong><small>Học viên và quản trị viên</small></span><span class="management-arrow" aria-hidden="true">↗</span></a>
                     <a class="management-card" href="quiz-admin.html"><span class="management-icon metric-icon-orange"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M8 3h8v4H8zM8 12h8M8 16h5"/></svg></span><span class="management-copy"><strong>Đề thi</strong><small>Quản lý bộ đề kiểm tra</small></span><span class="management-arrow" aria-hidden="true">↗</span></a>
                 </div>

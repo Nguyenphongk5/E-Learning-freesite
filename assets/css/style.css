@@ -1391,6 +1391,22 @@ p{
   color: #ffffff;
 }
 
+.book-cover-image {
+  display: block;
+  width: 100%;
+  height: 225px;
+  object-fit: cover;
+  background: #f8fafc;
+}
+
+.books-library-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 32px 16px;
+  color: #6c6b6b;
+  text-align: center;
+}
+
 .cover-python {
   background: linear-gradient(145deg, #176b50, #27b983);
 }

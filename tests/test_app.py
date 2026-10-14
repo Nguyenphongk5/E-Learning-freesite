@@ -21,7 +21,13 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "BOOTSTRAP_ADMIN_EMAIL": "root@example.com",
             "BOOTSTRAP_ADMIN_PASSWORD": "RootPassword123",
             "UPLOAD_FOLDER": str(Path(self.temp_dir.name) / "uploads"),
+            "BOOK_UPLOAD_FOLDER": str(Path(self.temp_dir.name) / "books"),
         })
+        with self.app.app_context():
+            from models import get_database
+
+            get_database().execute("DELETE FROM books")
+            get_database().commit()
         self.client = self.app.test_client()
 
     def tearDown(self):
@@ -128,6 +134,290 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertEqual(created.status_code, 201)
         self.assertEqual(created.json["role"], "admin")
         self.assertNotIn("password_hash", created.json)
+
+    def test_default_admin_account_is_created_with_a_hashed_password(self):
+        with tempfile.TemporaryDirectory() as temp_dir, patch.dict(os.environ, {
+            "ADMIN_EMAIL": "admin@eschool.com",
+            "ADMIN_PASSWORD": "admin123",
+        }):
+            app = create_app({
+                "TESTING": True,
+                "SECRET_KEY": "test-only-secret",
+                "DATABASE": str(Path(temp_dir) / "default-admin.sqlite3"),
+                "BOOK_UPLOAD_FOLDER": str(Path(temp_dir) / "books"),
+            })
+            client = app.test_client()
+            response = client.post("/login", data={
+                "email": "admin@eschool.com",
+                "password": "admin123",
+            })
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.headers["Location"], "/admin/books")
+            with app.app_context():
+                from models import find_user_by_email
+                from werkzeug.security import check_password_hash
+
+                admin = find_user_by_email("admin@eschool.com")
+                self.assertEqual(admin["role"], "admin")
+                self.assertNotEqual(admin["password_hash"], "admin123")
+                self.assertTrue(check_password_hash(admin["password_hash"], "admin123"))
+
+    def test_default_books_are_seeded_once_and_only_when_database_is_empty(self):
+        database_path = Path(self.temp_dir.name) / "seeded.sqlite3"
+        app_config = {
+            "TESTING": True,
+            "SECRET_KEY": "test-only-secret",
+            "DATABASE": str(database_path),
+            "BOOTSTRAP_ADMIN_EMAIL": "",
+            "BOOTSTRAP_ADMIN_PASSWORD": "",
+            "BOOK_UPLOAD_FOLDER": str(Path(self.temp_dir.name) / "seeded-books"),
+        }
+        app = create_app(app_config)
+        with app.app_context():
+            from models import list_books
+
+            seeded_books = list_books()
+            self.assertEqual(len(seeded_books), 6)
+            self.assertEqual(
+                {book["title"] for book in seeded_books},
+                {
+                    "Clean Code: A Handbook of Agile Software Craftsmanship",
+                    "The C++ Programming Language (4th Edition)",
+                    "Python Crash Course: A Hands-On, Project-Based Introduction to Programming",
+                    "Effective Java (3rd Edition)",
+                    "Eloquent JavaScript: A Modern Introduction to Programming",
+                    "Head First Design Patterns",
+                },
+            )
+            self.assertTrue(all(book["cover_image"].startswith("https://images.unsplash.com/") for book in seeded_books))
+
+        restarted_app = create_app(app_config)
+        with restarted_app.app_context():
+            from models import get_database, list_books
+
+            books = list_books()
+            self.assertEqual(len(books), 6)
+            get_database().execute("DELETE FROM books WHERE id != ?", (books[0]["id"],))
+            get_database().commit()
+
+        app_with_existing_book = create_app(app_config)
+        with app_with_existing_book.app_context():
+            from models import list_books
+
+            self.assertEqual(len(list_books()), 1)
+
+    def test_book_management_pages_are_admin_only(self):
+        self.assertEqual(self.client.get("/login").status_code, 200)
+        response = self.client.get("/admin/books")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers["Location"], "/login")
+
+        self.register_user()
+        forbidden = self.client.get("/admin/books")
+        self.assertEqual(forbidden.status_code, 403)
+
+    def test_admin_dashboard_links_and_book_count(self):
+        dashboard = self.client.get("/admin.html")
+        self.assertIn(b'href="/admin/books"', dashboard.data)
+        self.assertIn(b"Qu\xe1\xba\xa3n l\xc3\xbd s\xc3\xa1ch", dashboard.data)
+        self.assertIn(b'id="book-count"', dashboard.data)
+        self.assertEqual(self.client.get("/api/admin/books/count").status_code, 401)
+
+        self.register_user()
+        self.assertEqual(self.client.get("/api/admin/books/count").status_code, 403)
+
+        self.login_admin()
+        with self.app.app_context():
+            from models import create_book
+
+            create_book({
+                "title": "Sách kiểm thử",
+                "author": "Tác giả",
+                "cover_image": "",
+                "category": "Lập trình",
+                "description": "",
+                "document_url": "https://example.com/book.pdf",
+            })
+        count = self.client.get("/api/admin/books/count")
+        self.assertEqual(count.status_code, 200)
+        self.assertEqual(count.json, {"count": 1})
+
+    def test_public_book_catalog_tracks_admin_create_edit_and_delete(self):
+        self.login_admin()
+        png = BytesIO()
+        Image.new("RGB", (4, 4), "green").save(png, format="PNG")
+        created = self.client.post("/admin/books/add", data={
+            "title": "Sách công khai",
+            "author": "Tác giả mẫu",
+            "category": "Python",
+            "description": "Mô tả cuốn sách hiển thị trên trang chủ.",
+            "document_url": "https://example.com/public-book.pdf",
+            "cover_image": (BytesIO(png.getvalue()), "cover.png"),
+        }, content_type="multipart/form-data")
+        self.assertEqual(created.status_code, 302)
+
+        for path in ("/", "/index.html"):
+            with self.subTest(path=path):
+                catalog = self.client.get(path).get_data(as_text=True)
+                self.assertIn('id="book-grid"', catalog)
+                self.assertIn('data-title="Sách công khai"', catalog)
+                self.assertIn("Tác giả mẫu", catalog)
+                self.assertIn("Mô tả cuốn sách hiển thị trên trang chủ.", catalog)
+                self.assertIn("https://example.com/public-book.pdf", catalog)
+                self.assertIn("/static/uploads/books/", catalog)
+
+        with self.app.app_context():
+            from models import list_books
+
+            book_id = list_books()[0]["id"]
+        updated = self.client.post(f"/admin/books/edit/{book_id}", data={
+            "title": "Sách đã cập nhật",
+            "author": "Tác giả mới",
+            "category": "Java",
+            "description": "Mô tả mới.",
+            "document_url": "https://example.com/updated-book.pdf",
+        })
+        self.assertEqual(updated.status_code, 302)
+        public_after_update = self.client.get("/").get_data(as_text=True)
+        self.assertIn('data-title="Sách đã cập nhật"', public_after_update)
+        self.assertNotIn('data-title="Sách công khai"', public_after_update)
+        self.assertIn("Tác giả mới", public_after_update)
+
+        deleted = self.client.post(f"/admin/books/delete/{book_id}")
+        self.assertEqual(deleted.status_code, 302)
+        public_after_delete = self.client.get("/index.html").get_data(as_text=True)
+        self.assertNotIn("Sách đã cập nhật", public_after_delete)
+        self.assertIn("Chưa có cuốn sách nào trong thư viện.", public_after_delete)
+
+    def test_admin_navigation_and_add_book_route_are_consistent(self):
+        self.login_admin()
+        for path in (
+            "/admin.html",
+            "/admin-courses.html",
+            "/admin-course-form.html",
+            "/admin-course-delete.html",
+            "/admin-accounts.html",
+            "/quiz-admin.html",
+            "/admin/books",
+            "/admin/books/add",
+        ):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                page = response.get_data(as_text=True)
+                self.assertRegex(page, r'<a\b[^>]*href="/admin/books"[^>]*class="[^"]*\bnav-item\b[^"]*"')
+                for target in ("/admin.html", "/admin-courses.html", "/admin/books", "/admin-accounts.html"):
+                    self.assertIn(f'href="{target}"', page)
+                self.assertIn("fa-solid fa-book", page)
+                self.assertIn("Quản lý sách", page)
+
+        listing = self.client.get("/admin/books")
+        self.assertIn(b'href="/admin/books/add"', listing.data)
+        add_form = self.client.get("/admin/books/add")
+        self.assertEqual(add_form.status_code, 200)
+        self.assertIn(b"Th\xc3\xaam s\xc3\xa1ch m\xe1\xbb\x9bi", add_form.data)
+
+    def test_book_pages_use_eduhub_layout_and_form_validation(self):
+        self.login_admin()
+        listing = self.client.get("/admin/books")
+        listing_html = listing.get_data(as_text=True)
+        self.assertIn('data-protected-role="admin"', listing_html)
+        self.assertIn('id="admin-sidebar"', listing_html)
+        self.assertIn("sidebar-link-active", listing_html)
+        self.assertIn("EDUHUB", listing_html)
+        self.assertIn('href="/assets/css/admin-dashboard.css"', listing_html)
+        self.assertIn('src="/assets/js/auth.js"', listing_html)
+        self.assertIn("DANH SÁCH SÁCH", listing_html)
+        self.assertIn("Xem danh sách, thêm, cập nhật hoặc xóa tài liệu trong thư viện.", listing_html)
+        self.assertIn('href="/admin/books/add"', listing_html)
+        self.assertIn("add-course-button", listing_html)
+        self.assertIn('class="user-table book-table"', listing_html)
+        for heading in ("<th>ID</th>", "Ảnh bìa", "Tên sách", "Tác giả", "Danh mục", "Link tài liệu"):
+            self.assertIn(heading, listing_html)
+
+        form = self.client.get("/admin/books/add")
+        form_html = form.get_data(as_text=True)
+        self.assertIn('href="/admin/books" class="nav-item sidebar-link sidebar-link-active"', form_html)
+        self.assertIn("Eduhub", form_html)
+        self.assertIn("SÁCH", form_html)
+        self.assertIn('href="/assets/css/admin-dashboard.css"', form_html)
+        self.assertIn('src="/assets/js/auth.js"', form_html)
+        self.assertIn("Thông tin sách", form_html)
+        self.assertIn("Điền thông tin và lưu thay đổi vào thư viện.", form_html)
+        self.assertIn('href="/admin/books">← Danh sách sách</a>', form_html)
+        self.assertIn('method="post" enctype="multipart/form-data"', form_html)
+        for field in ("title", "author", "category", "document_url", "cover_image", "description"):
+            self.assertIn(f'name="{field}"', form_html)
+        self.assertIn("Lập trình C++ từ cơ bản đến nâng cao", form_html)
+        self.assertIn("Nguyễn Văn A", form_html)
+        self.assertIn("option value=\"Python\"", form_html)
+        self.assertIn("Làm mới", form_html)
+        self.assertGreaterEqual(form_html.count("required"), 4)
+
+        invalid = self.client.post("/admin/books/add", data={
+            "title": "   ",
+            "author": "Tác giả",
+            "category": "Lập trình",
+        })
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("Tên sách cần có từ 1 đến 200 ký tự.", invalid.get_data(as_text=True))
+
+    def test_admin_can_create_edit_and_delete_books_with_cover_upload(self):
+        self.assertEqual(self.client.post("/login", data={
+            "email": "root@example.com",
+            "password": "RootPassword123",
+        }).status_code, 302)
+        self.assertEqual(self.client.get("/admin/books").status_code, 200)
+        self.assertEqual(self.client.get("/admin/books/add").status_code, 200)
+
+        png = BytesIO()
+        Image.new("RGB", (4, 4), "green").save(png, format="PNG")
+        png_data = png.getvalue()
+        created = self.client.post("/admin/books/add", data={
+            "title": "Python cơ bản",
+            "author": "Nguyễn An",
+            "category": "Python",
+            "description": "Tài liệu học Python",
+            "document_url": "https://example.com/python.pdf",
+            "cover_image": (BytesIO(png_data), "cover.png"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        self.assertEqual(created.status_code, 200)
+        created_html = created.get_data(as_text=True)
+        self.assertIn("Python cơ bản", created_html)
+        self.assertIn("Nguyễn An", created_html)
+        self.assertIn("Mở tài liệu", created_html)
+
+        with self.app.app_context():
+            from models import list_books
+
+            book = list_books()[0]
+            book_id = book["id"]
+            cover_path = book["cover_image"]
+        self.assertRegex(cover_path, r"^/static/uploads/books/[a-f0-9]{32}\.png$")
+        self.assertEqual(self.client.get(f"/admin/books/edit/{book_id}").status_code, 200)
+        served_cover = self.client.get(cover_path)
+        self.assertEqual(served_cover.status_code, 200)
+        self.assertTrue(served_cover.content_type.startswith("image/png"))
+        served_cover.close()
+
+        updated = self.client.post(f"/admin/books/edit/{book_id}", data={
+            "title": "Python nâng cao",
+            "author": "Nguyễn An",
+            "category": "Python",
+            "description": "Đã cập nhật",
+            "document_url": "https://example.com/python-advanced.pdf",
+        }, follow_redirects=True)
+        self.assertEqual(updated.status_code, 200)
+        self.assertIn("Python nâng cao", updated.get_data(as_text=True))
+        local_cover = Path(self.temp_dir.name) / "books" / Path(cover_path).name
+        self.assertTrue(local_cover.exists())
+
+        deleted = self.client.post(f"/admin/books/delete/{book_id}", follow_redirects=True)
+        self.assertEqual(deleted.status_code, 200)
+        self.assertIn("Thư viện chưa có sách", deleted.get_data(as_text=True))
+        self.assertFalse(local_cover.exists())
+        missing_edit = self.client.get("/admin/books/edit/99999")
+        self.assertEqual(missing_edit.status_code, 404)
 
     def test_login_rejects_wrong_password(self):
         self.register_user()

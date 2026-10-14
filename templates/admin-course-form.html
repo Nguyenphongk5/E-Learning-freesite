@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/admin-dashboard.css">
     <script src="assets/js/auth.js" defer></script>
@@ -19,9 +20,10 @@
         <div class="flex h-[82px] shrink-0 items-center gap-3 border-b border-[#f2ebef] px-6"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#e94b91] text-white shadow-lg shadow-pink-200/70" aria-hidden="true"><svg viewBox="0 0 24 24" class="h-6 w-6"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M8 7h8M8 11h6"/></svg></span><span class="font-['Manrope'] text-[15px] font-extrabold tracking-[0.04em] text-[#342733]">EDUHUB<span class="ml-1 text-[#e94b91]">.</span><small class="mt-0.5 block text-[9px] font-bold tracking-[0.19em] text-[#a99ca7]">LEARNING SPACE</small></span><button id="sidebar-close" class="ml-auto grid h-9 w-9 place-items-center rounded-lg text-[#8f818c] hover:bg-[#fbf1f6] lg:hidden" type="button" aria-label="Đóng menu">×</button></div>
         <nav class="flex-1 overflow-y-auto px-4 py-6" aria-label="Điều hướng quản trị">
             <p class="px-3 pb-3 text-[10px] font-bold tracking-[0.18em] text-[#b4a8b1]">WORKSPACE</p>
-            <a class="sidebar-link" href="admin.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Tổng quan</span></a>
-            <a class="sidebar-link sidebar-link-active" href="admin-courses.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 10.2v5.3c2.7 2.5 7.3 2.5 10 0v-5.3M21 8v6"/></svg><span>Khóa học</span><span id="sidebar-course-count" class="sidebar-count">0</span></a>
-            <a class="sidebar-link" href="admin-accounts.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>Tài khoản</span></a>
+            <a class="sidebar-link" href="/admin.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Tổng quan</span></a>
+            <a class="sidebar-link sidebar-link-active" href="/admin-courses.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 10.2v5.3c2.7 2.5 7.3 2.5 10 0v-5.3M21 8v6"/></svg><span>Khóa học</span><span id="sidebar-course-count" class="sidebar-count">0</span></a>
+            <a href="/admin/books" class="nav-item sidebar-link"><i class="fa-solid fa-book" aria-hidden="true"></i> Quản lý sách</a>
+            <a class="sidebar-link" href="/admin-accounts.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>Tài khoản</span></a>
             <p class="px-3 pb-3 pt-8 text-[10px] font-bold tracking-[0.18em] text-[#b4a8b1]">CÔNG CỤ</p>
             <a class="sidebar-link" href="quiz-admin.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M8 3h8v4H8zM8 12h8M8 16h5"/></svg><span>Quản lý đề thi</span><span class="nav-external" aria-hidden="true">↗</span></a>
             <a class="sidebar-link" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z"/></svg><span>Về trang học</span><span class="nav-external" aria-hidden="true">↗</span></a>

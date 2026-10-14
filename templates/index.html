@@ -200,138 +200,47 @@
                         aria-pressed="false" data-i18n="books.filterCs">Khoa học máy tính</button>
                 </div>
             </div>
-            <p class="book-results" id="book-results" aria-live="polite"></p>
+            <p class="book-results" id="book-results" aria-live="polite" {% if not books %}hidden{% endif %}></p>
             <div class="book-grid" id="book-grid">
-                <article class="book-card" data-category="python" data-title="Python Crash Course"
-                    data-author="Eric Matthes">
-                    <div class="book-cover cover-python" role="img" aria-label="Bìa sách Python Crash Course">
-                        <span class="cover-kicker">HỌC LẬP TRÌNH</span>
-                        <span class="cover-title">Python<br>Crash Course</span>
-                        <span class="cover-author">Eric Matthes</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Python</span>
-                        <h3>Python Crash Course</h3>
-                        <p class="book-author">Tác giả: Eric Matthes</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,8 trên 5"><span aria-hidden="true">★★★★★</span> 4,8/5</p>
-                        <a class="book-action" href="https://nostarch.com/pythoncrashcourse3e" target="_blank"
-                            rel="noopener noreferrer">Tìm hiểu sách <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="python" data-title="Think Python"
-                    data-author="Allen B. Downey">
-                    <div class="book-cover cover-think-python" role="img" aria-label="Bìa sách Think Python">
-                        <span class="cover-kicker">TƯ DUY LẬP TRÌNH</span>
-                        <span class="cover-title">Think<br>Python</span>
-                        <span class="cover-author">Allen B. Downey</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Python</span>
-                        <h3>Think Python</h3>
-                        <p class="book-author">Tác giả: Allen B. Downey</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,7 trên 5"><span aria-hidden="true">★★★★★</span> 4,7/5</p>
-                        <a class="book-action" href="https://greenteapress.com/wp/think-python-3rd-edition/"
-                            target="_blank" rel="noopener noreferrer">Đọc sách miễn phí <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="java" data-title="Head First Java"
-                    data-author="Kathy Sierra và Bert Bates">
-                    <div class="book-cover cover-head-first" role="img" aria-label="Bìa sách Head First Java">
-                        <span class="cover-kicker">HỌC LẬP TRÌNH</span>
-                        <span class="cover-title">Head First<br>Java</span>
-                        <span class="cover-author">Kathy Sierra · Bert Bates</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Java</span>
-                        <h3>Head First Java</h3>
-                        <p class="book-author">Tác giả: Kathy Sierra và Bert Bates</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,7 trên 5"><span aria-hidden="true">★★★★★</span> 4,7/5</p>
-                        <a class="book-action"
-                            href="https://www.oreilly.com/library/view/head-first-java/9781491910771/"
-                            target="_blank" rel="noopener noreferrer">Tìm hiểu sách <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="web" data-title="Eloquent JavaScript"
-                    data-author="Marijn Haverbeke">
-                    <div class="book-cover cover-eloquent" role="img" aria-label="Bìa sách Eloquent JavaScript">
-                        <span class="cover-kicker">LẬP TRÌNH WEB</span>
-                        <span class="cover-title">Eloquent<br>JavaScript</span>
-                        <span class="cover-author">Marijn Haverbeke</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Web · JavaScript</span>
-                        <h3>Eloquent JavaScript</h3>
-                        <p class="book-author">Tác giả: Marijn Haverbeke</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,8 trên 5"><span aria-hidden="true">★★★★★</span> 4,8/5</p>
-                        <a class="book-action" href="https://eloquentjavascript.net/" target="_blank"
-                            rel="noopener noreferrer">Đọc sách miễn phí <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="cs" data-title="Clean Code"
-                    data-author="Robert C. Martin">
-                    <div class="book-cover cover-clean-code" role="img" aria-label="Bìa sách Clean Code">
-                        <span class="cover-kicker">NGHỆ THUẬT LẬP TRÌNH</span>
-                        <span class="cover-title">Clean<br>Code</span>
-                        <span class="cover-author">Robert C. Martin</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Khoa học máy tính</span>
-                        <h3>Clean Code</h3>
-                        <p class="book-author">Tác giả: Robert C. Martin</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,6 trên 5"><span aria-hidden="true">★★★★★</span> 4,6/5</p>
-                        <a class="book-action" href="https://www.pearson.com/en-us/subject-catalog/p/clean-code-a-handbook-of-agile-software-craftsmanship/P200000009528/9780132350884"
-                            target="_blank" rel="noopener noreferrer">Tìm hiểu sách <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="cs" data-title="The Pragmatic Programmer"
-                    data-author="David Thomas và Andrew Hunt">
-                    <div class="book-cover cover-pragmatic" role="img" aria-label="Bìa sách The Pragmatic Programmer">
-                        <span class="cover-kicker">KỸ NĂNG PHẦN MỀM</span>
-                        <span class="cover-title">The Pragmatic<br>Programmer</span>
-                        <span class="cover-author">David Thomas · Andrew Hunt</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Khoa học máy tính</span>
-                        <h3>The Pragmatic Programmer</h3>
-                        <p class="book-author">Tác giả: David Thomas và Andrew Hunt</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,8 trên 5"><span aria-hidden="true">★★★★★</span> 4,8/5</p>
-                        <a class="book-action" href="https://pragprog.com/titles/tpp20/the-pragmatic-programmer-2nd-edition/"
-                            target="_blank" rel="noopener noreferrer">Tìm hiểu sách <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="cs" data-title="Pro Git"
-                    data-author="Scott Chacon và Ben Straub">
-                    <div class="book-cover cover-pro-git" role="img" aria-label="Bìa sách Pro Git">
-                        <span class="cover-kicker">QUẢN LÝ MÃ NGUỒN</span>
-                        <span class="cover-title">Pro Git</span>
-                        <span class="cover-author">Scott Chacon · Ben Straub</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Khoa học máy tính</span>
-                        <h3>Pro Git</h3>
-                        <p class="book-author">Tác giả: Scott Chacon và Ben Straub</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,7 trên 5"><span aria-hidden="true">★★★★★</span> 4,7/5</p>
-                        <a class="book-action" href="https://git-scm.com/book/en/v2" target="_blank"
-                            rel="noopener noreferrer">Đọc sách miễn phí <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
-                <article class="book-card" data-category="web" data-title="HTML and CSS"
-                    data-author="Jon Duckett">
-                    <div class="book-cover cover-html-css" role="img" aria-label="Bìa sách HTML and CSS">
-                        <span class="cover-kicker">LẬP TRÌNH WEB</span>
-                        <span class="cover-title">HTML<br>&amp; CSS</span>
-                        <span class="cover-author">Jon Duckett</span>
-                    </div>
-                    <div class="book-info">
-                        <span class="book-category">Web</span>
-                        <h3>HTML and CSS</h3>
-                        <p class="book-author">Tác giả: Jon Duckett</p>
-                        <p class="book-rating" aria-label="Đánh giá 4,6 trên 5"><span aria-hidden="true">★★★★★</span> 4,6/5</p>
-                        <a class="book-action"
-                            href="https://www.wiley.com/en-us/HTML+and+CSS%3A+Design+and+Build+Websites-p-9781118008188"
-                            target="_blank" rel="noopener noreferrer">Tìm hiểu sách <span aria-hidden="true">→</span></a>
-                    </div>
-                </article>
+                {% for book in books %}
+                    {% set category = book["category"]|lower %}
+                    {% if "python" in category %}
+                        {% set filter_category = "python" %}
+                    {% elif "java" in category %}
+                        {% set filter_category = "java" %}
+                    {% elif "web" in category %}
+                        {% set filter_category = "web" %}
+                    {% else %}
+                        {% set filter_category = "cs" %}
+                    {% endif %}
+                    <article class="book-card" data-category="{{ filter_category }}"
+                        data-title="{{ book['title'] }}" data-author="{{ book['author'] }}">
+                        {% if book["cover_image"] %}
+                            <img class="book-cover-image" src="{{ book['cover_image'] }}"
+                                alt="Bìa sách {{ book['title'] }}" loading="lazy">
+                        {% else %}
+                            <div class="book-cover cover-clean-code" role="img" aria-label="Chưa có ảnh bìa sách">
+                                <span class="cover-kicker">{{ book["category"] }}</span>
+                                <span class="cover-title">{{ book["title"] }}</span>
+                                <span class="cover-author">{{ book["author"] }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="book-info">
+                            <span class="book-category">{{ book["category"] }}</span>
+                            <h3>{{ book["title"] }}</h3>
+                            <p class="book-author">Tác giả: {{ book["author"] }}</p>
+                            {% if book["description"] %}
+                                <p class="book-description">{{ book["description"][:80] }}{% if book["description"]|length > 80 %}...{% endif %}</p>
+                            {% endif %}
+                            {% if book["document_url"] %}
+                                <a class="book-action" href="{{ book['document_url'] }}" target="_blank"
+                                    rel="noopener noreferrer">Đọc / Tải tài liệu <span aria-hidden="true">→</span></a>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% else %}
+                    <p class="books-library-empty">Chưa có cuốn sách nào trong thư viện.</p>
+                {% endfor %}
             </div>
             <p class="book-empty" id="book-empty" hidden>Không tìm thấy sách phù hợp. Hãy thử từ khóa hoặc danh mục khác.</p>
         </div>

@@ -119,7 +119,7 @@ async function requireRole(requiredRole) {
         });
 
         if (requiredRole === "admin") {
-            await Promise.all([renderUsersTable(), initAdminForms(), renderCourseTable()]);
+            await Promise.all([renderUsersTable(), initAdminForms(), renderCourseTable(), renderBookCount()]);
         }
     } catch {
         location.replace("auth.html");
@@ -410,6 +410,21 @@ async function renderCourseTable() {
             tableBody.replaceChildren();
             addEmptyRow(tableBody, 3, error.message);
         }
+    }
+}
+
+async function renderBookCount() {
+    const bookCount = document.getElementById("book-count");
+    const overviewBookCount = document.getElementById("overview-book-count");
+    if (!bookCount && !overviewBookCount) return;
+    try {
+        const result = await apiRequest("/api/admin/books/count");
+        if (bookCount) bookCount.textContent = String(result.count);
+        if (overviewBookCount) overviewBookCount.textContent = String(result.count);
+    } catch (error) {
+        console.error("Unable to load book count:", error);
+        if (bookCount) bookCount.textContent = "—";
+        if (overviewBookCount) overviewBookCount.textContent = "—";
     }
 }
 

@@ -5,24 +5,44 @@ from functools import wraps
 from io import BytesIO
 from pathlib import Path
 
-from flask import Blueprint, current_app, g, jsonify, render_template, request, send_from_directory, session
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
 from PIL import Image, UnidentifiedImageError
-from werkzeug.security import check_password_hash, generate_password_hash
-
 from models import (
     create_course,
+    create_book,
     create_user,
+    count_books,
+    delete_book,
     delete_course,
     find_user_by_email,
+    get_book_by_id,
     get_course_by_id,
     get_user_by_id,
+    hash_password,
     list_accounts,
+    list_books,
     list_courses,
     normalize_email,
     public_account,
+    update_book,
     update_course,
     valid_email,
+    validate_book,
     validate_course,
+    verify_password,
 )
 
 
@@ -64,6 +84,186 @@ def admin_required(view):
     return wrapped
 
 
+def admin_page_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("pages.login_page"))
+        user = get_user_by_id(user_id)
+        if not user:
+            session.clear()
+            return redirect(url_for("pages.login_page"))
+        if user["role"] != "admin":
+            abort(403)
+        g.current_user = user
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+@page_routes.route("/login", methods=["GET", "POST"])
+def login_page():
+    if request.method == "GET":
+        user_id = session.get("user_id")
+        user = get_user_by_id(user_id) if user_id else None
+        if user and user["role"] == "admin":
+            return redirect(url_for("pages.admin_books"))
+        return render_template("admin_login.html")
+
+    email = normalize_email(request.form.get("email", ""))
+    password = request.form.get("password", "")
+    user = find_user_by_email(email)
+    if (
+        not user
+        or user["role"] != "admin"
+        or not verify_password(user["password_hash"], password)
+    ):
+        flash("Email hoặc mật khẩu không chính xác.", "error")
+        return render_template("admin_login.html"), 401
+
+    session.clear()
+    session.permanent = True
+    session["user_id"] = user["id"]
+    return redirect(url_for("pages.admin_books"))
+
+
+@page_routes.post("/logout")
+@admin_page_required
+def admin_logout():
+    session.clear()
+    return redirect(url_for("pages.login_page"))
+
+
+@page_routes.get("/admin/books")
+@admin_page_required
+def admin_books():
+    return render_template("admin_books.html", books=list_books(), admin=g.current_user)
+
+
+@page_routes.route("/admin/books/add", methods=["GET", "POST"])
+@admin_page_required
+def add_book():
+    if request.method == "GET":
+        return render_template("admin_book_form.html", book=None, admin=g.current_user)
+
+    data, error = validate_book(request.form)
+    if error:
+        flash(error, "error")
+        return render_template("admin_book_form.html", book=request.form, admin=g.current_user), 400
+
+    cover_file = request.files.get("cover_image")
+    if not cover_file or not cover_file.filename:
+        flash("Vui lòng chọn ảnh bìa cho sách.", "error")
+        return render_template("admin_book_form.html", book=request.form, admin=g.current_user), 400
+
+    image_data = None
+    extension = None
+    if cover_file and cover_file.filename:
+        image_data = cover_file.stream.read(MAX_UPLOAD_SIZE + 1)
+        if len(image_data) > MAX_UPLOAD_SIZE:
+            flash("Ảnh bìa không được vượt quá 5 MB.", "error")
+            return render_template("admin_book_form.html", book=request.form, admin=g.current_user), 413
+        try:
+            with Image.open(BytesIO(image_data)) as image:
+                extension = IMAGE_EXTENSIONS.get(image.format)
+                if extension is None:
+                    flash("Chỉ hỗ trợ ảnh PNG, JPG, GIF hoặc WebP.", "error")
+                    return render_template("admin_book_form.html", book=request.form, admin=g.current_user), 400
+                if image.width * image.height > MAX_IMAGE_PIXELS:
+                    flash("Kích thước ảnh vượt quá giới hạn cho phép.", "error")
+                    return render_template("admin_book_form.html", book=request.form, admin=g.current_user), 400
+                image.verify()
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+            flash("File tải lên không phải ảnh hợp lệ.", "error")
+            return render_template("admin_book_form.html", book=request.form, admin=g.current_user), 400
+
+    if image_data is not None and extension is not None:
+        filename = f"{uuid.uuid4().hex}{extension}"
+        upload_folder = Path(current_app.config["BOOK_UPLOAD_FOLDER"])
+        upload_folder.mkdir(parents=True, exist_ok=True)
+        (upload_folder / filename).write_bytes(image_data)
+        data["cover_image"] = f"/static/uploads/books/{filename}"
+
+    create_book(data)
+    flash("Đã thêm sách mới.", "success")
+    return redirect(url_for("pages.admin_books"))
+
+
+@page_routes.route("/admin/books/edit/<int:book_id>", methods=["GET", "POST"])
+@admin_page_required
+def edit_book(book_id):
+    book = get_book_by_id(book_id)
+    if not book:
+        abort(404)
+    if request.method == "GET":
+        return render_template("admin_book_form.html", book=book, admin=g.current_user)
+
+    data, error = validate_book(request.form)
+    if error:
+        flash(error, "error")
+        return render_template("admin_book_form.html", book={**dict(book), **request.form}, admin=g.current_user), 400
+
+    cover_file = request.files.get("cover_image")
+    image_data = None
+    extension = None
+    if cover_file and cover_file.filename:
+        image_data = cover_file.stream.read(MAX_UPLOAD_SIZE + 1)
+        if len(image_data) > MAX_UPLOAD_SIZE:
+            flash("Ảnh bìa không được vượt quá 5 MB.", "error")
+            return render_template("admin_book_form.html", book={**dict(book), **request.form}, admin=g.current_user), 413
+        try:
+            with Image.open(BytesIO(image_data)) as image:
+                extension = IMAGE_EXTENSIONS.get(image.format)
+                if extension is None:
+                    flash("Chỉ hỗ trợ ảnh PNG, JPG, GIF hoặc WebP.", "error")
+                    return render_template("admin_book_form.html", book={**dict(book), **request.form}, admin=g.current_user), 400
+                if image.width * image.height > MAX_IMAGE_PIXELS:
+                    flash("Kích thước ảnh vượt quá giới hạn cho phép.", "error")
+                    return render_template("admin_book_form.html", book={**dict(book), **request.form}, admin=g.current_user), 400
+                image.verify()
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+            flash("File tải lên không phải ảnh hợp lệ.", "error")
+            return render_template("admin_book_form.html", book={**dict(book), **request.form}, admin=g.current_user), 400
+
+    old_cover = book["cover_image"]
+    if image_data is not None and extension is not None:
+        filename = f"{uuid.uuid4().hex}{extension}"
+        upload_folder = Path(current_app.config["BOOK_UPLOAD_FOLDER"])
+        upload_folder.mkdir(parents=True, exist_ok=True)
+        (upload_folder / filename).write_bytes(image_data)
+        data["cover_image"] = f"/static/uploads/books/{filename}"
+    else:
+        data["cover_image"] = old_cover
+
+    update_book(book_id, data)
+    if data["cover_image"] != old_cover:
+        remove_book_cover(old_cover)
+    flash("Đã cập nhật thông tin sách.", "success")
+    return redirect(url_for("pages.admin_books"))
+
+
+@page_routes.post("/admin/books/delete/<int:book_id>")
+@admin_page_required
+def remove_book(book_id):
+    book = get_book_by_id(book_id)
+    if not book:
+        abort(404)
+    delete_book(book_id)
+    remove_book_cover(book["cover_image"])
+    flash("Đã xóa sách.", "success")
+    return redirect(url_for("pages.admin_books"))
+
+
+def remove_book_cover(cover_image):
+    filename = re.fullmatch(
+        r"/static/uploads/books/([a-f0-9]{32}\.(?:png|jpg|gif|webp))",
+        str(cover_image or ""),
+    )
+    if filename:
+        (Path(current_app.config["BOOK_UPLOAD_FOLDER"]) / filename.group(1)).unlink(missing_ok=True)
+
+
 @api_routes.get("/api/auth/me")
 @login_required
 def current_account():
@@ -84,7 +284,7 @@ def register():
         return api_error("Mật khẩu cần có ít nhất 8 ký tự.", 400)
 
     try:
-        user_id = create_user(name, email, generate_password_hash(password), "user")
+        user_id = create_user(name, email, hash_password(password), "user")
     except sqlite3.IntegrityError:
         return api_error("Email này đã được sử dụng.", 409)
 
@@ -101,7 +301,7 @@ def login():
     email = normalize_email(data.get("email", ""))
     password = str(data.get("password", ""))
     user = find_user_by_email(email)
-    if not user or not check_password_hash(user["password_hash"], password):
+    if not user or not verify_password(user["password_hash"], password):
         return api_error("Email hoặc mật khẩu không chính xác.", 401)
 
     session.clear()
@@ -184,6 +384,12 @@ def admin_accounts():
     return jsonify([dict(user) for user in list_accounts()])
 
 
+@api_routes.get("/api/admin/books/count")
+@admin_required
+def admin_book_count():
+    return jsonify({"count": count_books()})
+
+
 @api_routes.post("/api/admin/users")
 @admin_required
 def create_admin():
@@ -198,7 +404,7 @@ def create_admin():
     if len(password) < 8:
         return api_error("Mật khẩu cần có ít nhất 8 ký tự.", 400)
     try:
-        user_id = create_user(name, email, generate_password_hash(password), "admin")
+        user_id = create_user(name, email, hash_password(password), "admin")
     except sqlite3.IntegrityError:
         return api_error("Email này đã được sử dụng.", 409)
     return jsonify(public_account(get_user_by_id(user_id))), 201
@@ -206,7 +412,7 @@ def create_admin():
 
 @page_routes.get("/")
 def homepage():
-    return render_template("index.html")
+    return render_template("index.html", books=list_books())
 
 
 @page_routes.get("/uploads/<path:filename>")
@@ -217,6 +423,13 @@ def uploaded_image(filename):
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename, max_age=3600)
 
 
+@page_routes.get("/static/uploads/books/<path:filename>")
+def uploaded_book_cover(filename):
+    if re.fullmatch(r"[a-f0-9]{32}\.(?:png|jpg|gif|webp)", filename) is None:
+        return api_error("Không tìm thấy ảnh bìa.", 404)
+    return send_from_directory(current_app.config["BOOK_UPLOAD_FOLDER"], filename, max_age=3600)
+
+
 @page_routes.get("/<path:filename>")
 def view_or_static_file(filename):
     path = Path(filename)
@@ -225,6 +438,8 @@ def view_or_static_file(filename):
     if path.suffix.lower() not in STATIC_EXTENSIONS:
         return api_error("Không tìm thấy trang.", 404)
     if path.suffix.lower() == ".html":
+        if path.as_posix() == "index.html":
+            return render_template("index.html", books=list_books())
         return render_template(filename)
     return send_from_directory(current_app.config["PROJECT_ROOT"], filename)
 

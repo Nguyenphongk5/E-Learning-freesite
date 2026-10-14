@@ -39,10 +39,13 @@ def create_app(test_config=None):
         SECRET_KEY=configured_key or load_secret_key(),
         DATABASE=os.environ.get("DATABASE_PATH", str(BASE_DIR / "instance" / "elearning.sqlite3")),
         UPLOAD_FOLDER=os.environ.get("UPLOAD_FOLDER", str(BASE_DIR / "instance" / "uploads")),
+        BOOK_UPLOAD_FOLDER=os.environ.get(
+            "BOOK_UPLOAD_FOLDER", str(BASE_DIR / "static" / "uploads" / "books")
+        ),
         PROJECT_ROOT=str(BASE_DIR),
         MAX_CONTENT_LENGTH=6 * 1024 * 1024,
-        BOOTSTRAP_ADMIN_EMAIL=os.environ.get("ADMIN_EMAIL", "").strip().lower(),
-        BOOTSTRAP_ADMIN_PASSWORD=os.environ.get("ADMIN_PASSWORD", ""),
+        BOOTSTRAP_ADMIN_EMAIL=os.environ.get("ADMIN_EMAIL", "admin@eschool.com").strip().lower(),
+        BOOTSTRAP_ADMIN_PASSWORD=os.environ.get("ADMIN_PASSWORD", "admin123"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "").lower() == "true",
@@ -50,6 +53,8 @@ def create_app(test_config=None):
     )
     if test_config:
         app.config.update(test_config)
+
+    Path(app.config["BOOK_UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
 
     with app.app_context():
         initialize_database(app)

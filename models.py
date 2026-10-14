@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from flask import current_app, g
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 DEFAULT_COURSES = [
@@ -27,6 +27,67 @@ DEFAULT_COURSES = [
     ("Tailwind CSS", "Responsive web designs with Tailwind CSS", "images/picture/card-17.png", "https://www.youtube.com/watch?v=lZp4salRFFc"),
     ("Bootstrap", "Create interactive websites with Bootstrap", "images/picture/card-18.png", "https://www.youtube.com/watch?v=-qfEOE4vtxE"),
 ]
+
+DEFAULT_BOOKS = [
+    (
+        "Clean Code: A Handbook of Agile Software Craftsmanship",
+        "Robert C. Martin (Uncle Bob)",
+        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80",
+        "Khác / Best Practices",
+        "Cuốn sách kinh điển hướng dẫn cách viết mã nguồn sạch, dễ đọc, dễ bảo trì và tối ưu cho lập trình viên.",
+        "https://www.oreilly.com/library/view/clean-code-a/9780132350884/",
+    ),
+    (
+        "The C++ Programming Language (4th Edition)",
+        "Bjarne Stroustrup",
+        "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80",
+        "C++",
+        "Cuốn sách đầy đủ và chính thống nhất về ngôn ngữ C++ do chính cha đẻ Bjarne Stroustrup biên soạn.",
+        "https://www.stroustrup.com/4th.html",
+    ),
+    (
+        "Python Crash Course: A Hands-On, Project-Based Introduction to Programming",
+        "Eric Matthes",
+        "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=600&q=80",
+        "Python",
+        "Cuốn sách bán chạy nhất thế giới dành cho người mới bắt đầu học Python qua các dự án thực tế.",
+        "https://nostarch.com/pythoncrashcourse2e",
+    ),
+    (
+        "Effective Java (3rd Edition)",
+        "Joshua Bloch",
+        "https://images.unsplash.com/photo-1519682337058-a94d519337bc?auto=format&fit=crop&w=600&q=80",
+        "Java",
+        "Cẩm nang không thể thiếu dành cho các Java Developer muốn nâng cao tư duy thiết kế và tối ưu mã nguồn Java.",
+        "https://www.oreilly.com/library/view/effective-java-3rd/9780134686097/",
+    ),
+    (
+        "Eloquent JavaScript: A Modern Introduction to Programming",
+        "Marijn Haverbeke",
+        "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80",
+        "Web Development",
+        "Cuốn sách tuyệt vời về ngôn ngữ JavaScript hiện đại, từ tư duy lập trình căn bản đến các ứng dụng web phức tạp.",
+        "https://eloquentjavascript.net/",
+    ),
+    (
+        "Head First Design Patterns",
+        "Eric Freeman & Elisabeth Robson",
+        "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=600&q=80",
+        "Khác / Architecture",
+        "Hướng dẫn trực quan, sinh động về các mẫu thiết kế phần mềm (Design Patterns) phổ biến trong công nghiệp.",
+        "https://www.oreilly.com/library/view/head-first-design/9781492077992/",
+    ),
+]
+
+
+def seed_books(connection):
+    if connection.execute("SELECT COUNT(*) FROM books").fetchone()[0] != 0:
+        return
+    connection.executemany(
+        "INSERT INTO books (title, author, cover_image, category, description, document_url) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        DEFAULT_BOOKS,
+    )
 
 
 def get_database():
@@ -61,6 +122,16 @@ def initialize_database(app):
             course_url TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS books (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            author TEXT NOT NULL,
+            cover_image TEXT NOT NULL DEFAULT '',
+            category TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            document_url TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
         """
     )
     if connection.execute("SELECT COUNT(*) FROM courses").fetchone()[0] == 0:
@@ -68,6 +139,7 @@ def initialize_database(app):
             "INSERT INTO courses (title, description, image_url, course_url) VALUES (?, ?, ?, ?)",
             DEFAULT_COURSES,
         )
+    seed_books(connection)
 
     admin_email = app.config["BOOTSTRAP_ADMIN_EMAIL"]
     admin_password = app.config["BOOTSTRAP_ADMIN_PASSWORD"]
@@ -86,12 +158,21 @@ def initialize_database(app):
                 "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')",
                 ("Quản trị viên", admin_email, generate_password_hash(admin_password)),
             )
+            print(f"Admin account initialized: {admin_email}")
     connection.commit()
     connection.close()
 
 
 def normalize_email(value):
     return str(value).strip().lower()
+
+
+def hash_password(password):
+    return generate_password_hash(password)
+
+
+def verify_password(password_hash, password):
+    return check_password_hash(password_hash, password)
 
 
 def valid_email(email):
@@ -183,6 +264,93 @@ def update_course(course_id, data):
 
 def delete_course(course_id):
     cursor = get_database().execute("DELETE FROM courses WHERE id = ?", (course_id,))
+    if cursor.rowcount:
+        get_database().commit()
+    return cursor.rowcount > 0
+
+
+def validate_book(data):
+    title = str(data.get("title", "")).strip()
+    author = str(data.get("author", "")).strip()
+    cover_image = str(data.get("cover_image", "")).strip()
+    category = str(data.get("category", "")).strip()
+    description = str(data.get("description", "")).strip()
+    document_url = str(data.get("document_url", "")).strip()
+    parsed_document_url = urlsplit(document_url)
+
+    if not title or len(title) > 200:
+        return None, "Tên sách cần có từ 1 đến 200 ký tự."
+    if not author or len(author) > 120:
+        return None, "Tên tác giả cần có từ 1 đến 120 ký tự."
+    if not category or len(category) > 80:
+        return None, "Danh mục cần có từ 1 đến 80 ký tự."
+    if len(description) > 2000:
+        return None, "Mô tả không được vượt quá 2000 ký tự."
+    if parsed_document_url.scheme not in {"http", "https"} or not parsed_document_url.netloc:
+        return None, "Liên kết tài liệu phải bắt đầu bằng http:// hoặc https://."
+    if cover_image and not re.fullmatch(r"/static/uploads/books/[a-f0-9]{32}\.(?:png|jpg|gif|webp)", cover_image):
+        return None, "Ảnh bìa không hợp lệ."
+
+    return {
+        "title": title,
+        "author": author,
+        "cover_image": cover_image,
+        "category": category,
+        "description": description,
+        "document_url": document_url,
+    }, None
+
+
+def list_books():
+    return get_database().execute("SELECT * FROM books ORDER BY created_at DESC, id DESC").fetchall()
+
+
+def count_books():
+    return get_database().execute("SELECT COUNT(*) FROM books").fetchone()[0]
+
+
+def get_book_by_id(book_id):
+    return get_database().execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
+
+
+def create_book(data):
+    cursor = get_database().execute(
+        "INSERT INTO books (title, author, cover_image, category, description, document_url) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            data["title"],
+            data["author"],
+            data["cover_image"],
+            data["category"],
+            data["description"],
+            data["document_url"],
+        ),
+    )
+    get_database().commit()
+    return cursor.lastrowid
+
+
+def update_book(book_id, data):
+    cursor = get_database().execute(
+        "UPDATE books SET title = ?, author = ?, cover_image = ?, category = ?, "
+        "description = ?, document_url = ? WHERE id = ?",
+        (
+            data["title"],
+            data["author"],
+            data["cover_image"],
+            data["category"],
+            data["description"],
+            data["document_url"],
+            book_id,
+        ),
+    )
+    if cursor.rowcount:
+        get_database().commit()
+    return cursor.rowcount > 0
+
+
+def delete_book(book_id):
+    cursor = get_database().execute("DELETE FROM books WHERE id = ?", (book_id,))
     if cursor.rowcount:
         get_database().commit()
     return cursor.rowcount > 0
