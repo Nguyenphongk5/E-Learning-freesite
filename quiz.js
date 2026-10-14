@@ -159,6 +159,7 @@ function submitExam(timedOut = false) {
   }
   renderResult(result, timedOut);
   renderHistory();
+  renderAnalytics();
   showView('result');
 }
 
@@ -175,6 +176,71 @@ function renderResult(result, timedOut) {
     const selected = answers[index] === null ? 'Chưa chọn đáp án' : question.options[answers[index]];
     return `<article class="review-item ${correct ? 'is-correct' : 'is-wrong'}"><div class="review-result-line"><span>${correct ? '✓ Trả lời đúng' : '× Cần xem lại'}</span><strong>Câu ${index + 1}</strong></div><h3>${escapeHtml(question.text)}</h3><p class="review-answer">Bạn chọn: <strong>${escapeHtml(selected)}</strong></p><p class="review-answer">Đáp án đúng: <strong>${escapeHtml(question.options[question.answer])}</strong></p><p class="review-explanation">${escapeHtml(question.explanation)}</p></article>`;
   }).join('');
+}
+
+
+function renderAnalytics() {
+  const history = readHistory();
+  const root = $('#analyticsContent');
+  if (!root) return;
+
+  if (!history.length) {
+    root.innerHTML = '<p class="analytics-empty">Chưa có dữ liệu thống kê. Hãy hoàn thành một bài thi để xem biểu đồ của bạn.</p>';
+    return;
+  }
+
+  const totalAttempts = history.length;
+  const average = Math.round(history.reduce((sum, item) => sum + Number(item.score || 0), 0) / totalAttempts);
+  const totalCorrect = history.reduce((sum, item) => sum + Number(item.correct || 0), 0);
+  const totalQuestions = history.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const totalWrong = Math.max(0, totalQuestions - totalCorrect);
+  const correctPercent = totalQuestions ? Math.round(totalCorrect / totalQuestions * 100) : 0;
+  const wrongPercent = totalQuestions ? 100 - correctPercent : 0;
+  const chronological = [...history].reverse();
+  const scoreLabel = (item) => `${escapeHtml(item.title || 'Bài thi')} · ${escapeHtml(item.date || '')}`;
+
+  const bars = chronological.map((item, index) => {
+    const score = Math.max(0, Math.min(100, Number(item.score) || 0));
+    return `<div class="chart-bar-item" title="${scoreLabel(item)}: ${score}%"><div class="chart-bar-value">${score}%</div><div class="chart-bar-track"><span style="height:${score}%"></span></div><small>Lượt ${index + 1}</small></div>`;
+  }).join('');
+
+  const width = 560, height = 220, left = 34, right = 18, top = 20, bottom = 34;
+  const plotWidth = width - left - right, plotHeight = height - top - bottom;
+  const points = chronological.map((item, index) => {
+    const x = chronological.length === 1 ? left + plotWidth / 2 : left + index * plotWidth / (chronological.length - 1);
+    const score = Math.max(0, Math.min(100, Number(item.score) || 0));
+    return { x, y: top + (100 - score) / 100 * plotHeight, score, index };
+  });
+  const polyline = points.map(point => `${point.x},${point.y}`).join(' ');
+  const grid = [0, 25, 50, 75, 100].map(value => {
+    const y = top + (100 - value) / 100 * plotHeight;
+    return `<line x1="${left}" y1="${y}" x2="${width-right}" y2="${y}" class="chart-grid-line"/><text x="${left-8}" y="${y+4}" text-anchor="end" class="chart-axis-label">${value}</text>`;
+  }).join('');
+  const dots = points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="4" class="chart-dot"><title>Lượt ${point.index + 1}: ${point.score}%</title></circle>`).join('');
+  const xLabels = points.map(point => `<text x="${point.x}" y="${height-10}" text-anchor="middle" class="chart-axis-label">${point.index + 1}</text>`).join('');
+  const maxBars = chronological.slice(-10);
+  const visibleBars = maxBars.map((item, index) => {
+    const score = Math.max(0, Math.min(100, Number(item.score) || 0));
+    const attemptNumber = chronological.length - maxBars.length + index + 1;
+    return `<div class="chart-bar-item" title="${scoreLabel(item)}: ${score}%"><div class="chart-bar-value">${score}%</div><div class="chart-bar-track"><span style="height:${score}%"></span></div><small>Lượt ${attemptNumber}</small></div>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="analytics-metrics">
+      <article class="analytics-metric"><span>Tổng lượt thi</span><strong>${totalAttempts}</strong><small>Các lượt đã lưu</small></article>
+      <article class="analytics-metric"><span>Điểm trung bình</span><strong>${average}%</strong><small>Trên thang điểm 100</small></article>
+      <article class="analytics-metric"><span>Tổng câu đúng</span><strong>${totalCorrect}</strong><small>Qua tất cả lượt thi</small></article>
+      <article class="analytics-metric"><span>Tổng câu chưa đúng</span><strong>${totalWrong}</strong><small>Qua tất cả lượt thi</small></article>
+    </div>
+    <div class="analytics-chart-grid">
+      <article class="analytics-card"><div class="analytics-card-heading"><div><h3>Tỷ lệ câu đúng và chưa đúng</h3><p>Tổng hợp từ các lượt thi đã lưu</p></div></div>
+        <div class="donut-layout"><div class="donut-chart" style="--correct-angle:${correctPercent * 3.6}deg"><div><strong>${correctPercent}%</strong><span>câu đúng</span></div></div><div class="chart-legend"><span><i class="legend-correct"></i>Đúng <strong>${totalCorrect}</strong> (${correctPercent}%)</span><span><i class="legend-wrong"></i>Chưa đúng <strong>${totalWrong}</strong> (${wrongPercent}%)</span></div></div>
+      </article>
+      <article class="analytics-card"><div class="analytics-card-heading"><div><h3>Điểm theo từng lượt thi</h3><p>Hiển thị tối đa 10 lượt gần nhất</p></div></div><div class="bar-chart">${visibleBars}</div></article>
+      <article class="analytics-card analytics-card-wide"><div class="analytics-card-heading"><div><h3>Xu hướng điểm số</h3><p>Điểm thay đổi qua các lần làm bài theo thứ tự thời gian</p></div></div>
+        <div class="line-chart-wrap"><svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Biểu đồ đường thể hiện điểm số theo lượt thi">${grid}<polyline points="${polyline}" class="chart-line"/>${dots}${xLabels}</svg></div><p class="chart-footnote">Trục ngang: lượt thi · Trục dọc: điểm số (%)</p>
+      </article>
+    </div>`;
 }
 
 $('#examFilters').addEventListener('click', (event) => {
@@ -219,3 +285,4 @@ $('#retryExamBtn').addEventListener('click', () => {
 
 renderExams();
 renderHistory();
+renderAnalytics();
