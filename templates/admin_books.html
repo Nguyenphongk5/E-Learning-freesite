@@ -127,6 +127,7 @@
                                     <td>
                                         <span class="book-title">{{ book["title"] }}</span>
                                         {% if book["description"] %}<p class="book-description">{{ book["description"] }}</p>{% endif %}
+                                        <a class="text-button mt-2 inline-flex" href="{{ url_for('pages.book_detail_page', book_id=book['id']) }}">Xem trang chi tiết ↗</a>
                                     </td>
                                     <td>{{ book["author"] }}</td>
                                     <td><span class="book-category">{{ book["category"] }}</span></td>

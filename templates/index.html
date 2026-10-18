@@ -232,10 +232,7 @@
                             {% if book["description"] %}
                                 <p class="book-description">{{ book["description"][:80] }}{% if book["description"]|length > 80 %}...{% endif %}</p>
                             {% endif %}
-                            {% if book["document_url"] %}
-                                <a class="book-action" href="{{ book['document_url'] }}" target="_blank"
-                                    rel="noopener noreferrer">Đọc / Tải tài liệu <span aria-hidden="true">→</span></a>
-                            {% endif %}
+                            <a class="book-action" href="{{ url_for('pages.book_detail_page', book_id=book['id']) }}">Chi tiết sách <span aria-hidden="true">→</span></a>
                         </div>
                     </article>
                 {% else %}

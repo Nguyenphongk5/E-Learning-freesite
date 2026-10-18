@@ -131,6 +131,12 @@
                             <textarea class="admin-input min-h-24 resize-y py-3" id="description" name="description"
                                 maxlength="2000" rows="4" placeholder="Giới thiệu ngắn về nội dung sách">{{ book['description'] if book else '' }}</textarea>
                         </div>
+                        <div class="md:col-span-2">
+                            <label class="field-label" for="details">Nội dung chi tiết <span class="font-normal text-[#aa9ca7]">(tùy chọn)</span></label>
+                            <textarea class="admin-input min-h-40 resize-y py-3" id="details" name="details"
+                                maxlength="5000" rows="7" placeholder="Giới thiệu nội dung, các chủ đề chính, đối tượng phù hợp hoặc cách sử dụng tài liệu">{{ book['details'] if book else '' }}</textarea>
+                            <p class="mt-2 text-xs text-[#968793]">Nội dung hiển thị trên trang chi tiết sách. Xuống dòng để chia đoạn.</p>
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-3 border-t border-[#f0e6ec] pt-4">
                         <button class="submit-button" type="submit">

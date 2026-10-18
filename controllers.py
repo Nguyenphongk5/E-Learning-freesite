@@ -466,6 +466,14 @@ def course_detail_page(course_id):
     return render_template("course-detail.html", course=course)
 
 
+@page_routes.get("/books/<int:book_id>")
+def book_detail_page(book_id):
+    book = get_book_by_id(book_id)
+    if not book:
+        abort(404)
+    return render_template("book-detail.html", book=book)
+
+
 @page_routes.get("/uploads/<path:filename>")
 def uploaded_image(filename):
     path = Path(filename)

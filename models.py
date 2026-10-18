@@ -130,6 +130,7 @@ def initialize_database(app):
             cover_image TEXT NOT NULL DEFAULT '',
             category TEXT NOT NULL,
             description TEXT NOT NULL DEFAULT '',
+            details TEXT NOT NULL DEFAULT '',
             document_url TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -154,6 +155,9 @@ def initialize_database(app):
     course_columns = {row["name"] for row in connection.execute("PRAGMA table_info(courses)")}
     if "details" not in course_columns:
         connection.execute("ALTER TABLE courses ADD COLUMN details TEXT NOT NULL DEFAULT ''")
+    book_columns = {row["name"] for row in connection.execute("PRAGMA table_info(books)")}
+    if "details" not in book_columns:
+        connection.execute("ALTER TABLE books ADD COLUMN details TEXT NOT NULL DEFAULT ''")
     if connection.execute("SELECT COUNT(*) FROM courses").fetchone()[0] == 0:
         connection.executemany(
             "INSERT INTO courses (title, description, image_url, course_url) VALUES (?, ?, ?, ?)",
@@ -351,6 +355,7 @@ def validate_book(data):
     cover_image = str(data.get("cover_image", "")).strip()
     category = str(data.get("category", "")).strip()
     description = str(data.get("description", "")).strip()
+    details = str(data.get("details", "")).strip()
     document_url = str(data.get("document_url", "")).strip()
     parsed_document_url = urlsplit(document_url)
 
@@ -362,6 +367,8 @@ def validate_book(data):
         return None, "Danh mục cần có từ 1 đến 80 ký tự."
     if len(description) > 2000:
         return None, "Mô tả không được vượt quá 2000 ký tự."
+    if len(details) > 5000:
+        return None, "Nội dung chi tiết không được vượt quá 5000 ký tự."
     if parsed_document_url.scheme not in {"http", "https"} or not parsed_document_url.netloc:
         return None, "Liên kết tài liệu phải bắt đầu bằng http:// hoặc https://."
     if cover_image and not re.fullmatch(r"/static/uploads/books/[a-f0-9]{32}\.(?:png|jpg|gif|webp)", cover_image):
@@ -373,6 +380,7 @@ def validate_book(data):
         "cover_image": cover_image,
         "category": category,
         "description": description,
+        "details": details,
         "document_url": document_url,
     }, None
 
@@ -391,14 +399,15 @@ def get_book_by_id(book_id):
 
 def create_book(data):
     cursor = get_database().execute(
-        "INSERT INTO books (title, author, cover_image, category, description, document_url) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO books (title, author, cover_image, category, description, details, document_url) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
         (
             data["title"],
             data["author"],
             data["cover_image"],
             data["category"],
             data["description"],
+            data.get("details", ""),
             data["document_url"],
         ),
     )
@@ -409,13 +418,14 @@ def create_book(data):
 def update_book(book_id, data):
     cursor = get_database().execute(
         "UPDATE books SET title = ?, author = ?, cover_image = ?, category = ?, "
-        "description = ?, document_url = ? WHERE id = ?",
+        "description = ?, details = ?, document_url = ? WHERE id = ?",
         (
             data["title"],
             data["author"],
             data["cover_image"],
             data["category"],
             data["description"],
+            data.get("details", ""),
             data["document_url"],
             book_id,
         ),

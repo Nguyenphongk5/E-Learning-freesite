@@ -294,10 +294,15 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "author": "Tác giả mẫu",
             "category": "Python",
             "description": "Mô tả cuốn sách hiển thị trên trang chủ.",
+            "details": "Nội dung chi tiết sách.\nCác chủ đề chính.",
             "document_url": "https://example.com/public-book.pdf",
             "cover_image": (BytesIO(png.getvalue()), "cover.png"),
         }, content_type="multipart/form-data")
         self.assertEqual(created.status_code, 302)
+        with self.app.app_context():
+            from models import list_books
+
+            book_id = list_books()[0]["id"]
 
         for path in ("/", "/index.html"):
             with self.subTest(path=path):
@@ -306,18 +311,18 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
                 self.assertIn('data-title="Sách công khai"', catalog)
                 self.assertIn("Tác giả mẫu", catalog)
                 self.assertIn("Mô tả cuốn sách hiển thị trên trang chủ.", catalog)
-                self.assertIn("https://example.com/public-book.pdf", catalog)
+                self.assertIn(f'href="/books/{book_id}"', catalog)
                 self.assertIn("/static/uploads/books/", catalog)
-
-        with self.app.app_context():
-            from models import list_books
-
-            book_id = list_books()[0]["id"]
+            detail_page = self.client.get(f"/books/{book_id}")
+            self.assertEqual(detail_page.status_code, 200)
+            self.assertIn("Nội dung chi tiết sách.", detail_page.get_data(as_text=True))
+            self.assertIn("https://example.com/public-book.pdf", detail_page.get_data(as_text=True))
         updated = self.client.post(f"/admin/books/edit/{book_id}", data={
             "title": "Sách đã cập nhật",
             "author": "Tác giả mới",
             "category": "Java",
             "description": "Mô tả mới.",
+            "details": "Nội dung sách đã sửa.",
             "document_url": "https://example.com/updated-book.pdf",
         })
         self.assertEqual(updated.status_code, 302)
@@ -325,12 +330,14 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertIn('data-title="Sách đã cập nhật"', public_after_update)
         self.assertNotIn('data-title="Sách công khai"', public_after_update)
         self.assertIn("Tác giả mới", public_after_update)
+        self.assertIn("Nội dung sách đã sửa.", self.client.get(f"/books/{book_id}").get_data(as_text=True))
 
         deleted = self.client.post(f"/admin/books/delete/{book_id}")
         self.assertEqual(deleted.status_code, 302)
         public_after_delete = self.client.get("/index.html").get_data(as_text=True)
         self.assertNotIn("Sách đã cập nhật", public_after_delete)
         self.assertIn("Chưa có cuốn sách nào trong thư viện.", public_after_delete)
+        self.assertEqual(self.client.get(f"/books/{book_id}").status_code, 404)
 
     def test_admin_navigation_and_add_book_route_are_consistent(self):
         self.login_admin()
@@ -421,6 +428,7 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "author": "Nguyễn An",
             "category": "Python",
             "description": "Tài liệu học Python",
+            "details": "Các chương về cú pháp và thực hành.",
             "document_url": "https://example.com/python.pdf",
             "cover_image": (BytesIO(png_data), "cover.png"),
         }, content_type="multipart/form-data", follow_redirects=True)
@@ -448,6 +456,7 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "author": "Nguyễn An",
             "category": "Python",
             "description": "Đã cập nhật",
+            "details": "Đã cập nhật nội dung chi tiết.",
             "document_url": "https://example.com/python-advanced.pdf",
         }, follow_redirects=True)
         self.assertEqual(updated.status_code, 200)
