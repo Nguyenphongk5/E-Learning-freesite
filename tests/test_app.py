@@ -497,9 +497,17 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
 
+        homepage = self.client.get("/").get_data(as_text=True)
+        self.assertIn('id="category-toggle"', homepage)
+        self.assertIn('id="category-menu"', homepage)
+        self.assertIn('id="site-search-input"', homepage)
+        self.assertIn('id="header-register"', homepage)
+
         for path in (
             "/assets/css/admin-dashboard.css",
             "/assets/js/auth.js",
+            "/assets/css/site-header.css",
+            "/assets/js/site-search.js",
             "/images/logo.svg",
         ):
             with self.subTest(path=path):

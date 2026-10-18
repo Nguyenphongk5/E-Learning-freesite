@@ -12,6 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/site-header.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,700&display=swap"
         rel="stylesheet">
@@ -44,56 +45,56 @@
         NAVIGATION
     ===================
     -->
-    <header class="nav-scroll fixed-top mh-xss-mobile-nav">
-        <div class="container">
-            <nav class="navbar navbar-expand-lg navbar-light">
-                <a class="navbar-brand" href="#">
-                    <img src="images/logo.svg" alt="">
+    <header class="site-header">
+        <div class="site-header__inner">
+            <a class="site-brand" href="/" aria-label="Eduhub, trang chủ">
+                <img src="images/logo.svg" alt="">
+                <span>EDUHUB<small>HỌC LẬP TRÌNH MỖI NGÀY</small></span>
+            </a>
+
+            <div class="site-header__discovery">
+                <button class="category-trigger" id="category-toggle" type="button" aria-expanded="false" aria-controls="category-menu">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+                    <span data-i18n="nav.categories">Danh mục</span>
+                    <span class="category-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <form class="site-search" id="site-search-form" role="search" autocomplete="off">
+                    <button class="site-search__submit" type="submit" aria-label="Tìm kiếm" data-i18n-aria-label="search.submit">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+                    </button>
+                    <input id="site-search-input" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="site-search-results" aria-label="Tìm khóa học, sách và quiz" data-i18n-aria-label="search.label" data-i18n-placeholder="search.placeholder" placeholder="Tìm khóa học, sách, bài tập...">
+                    <div class="site-search__results" id="site-search-results" role="listbox" aria-label="Kết quả tìm kiếm" hidden></div>
+                </form>
+            </div>
+
+            <div class="site-header__actions">
+                <a class="register-link" id="header-register" href="auth.html?view=register" data-i18n="nav.signup">Đăng ký</a>
+                <a class="login-link" id="home-account-link" href="auth.html">
+                    <span id="home-account-avatar" class="home-account-avatar" aria-hidden="true" hidden></span>
+                    <span id="home-account-label" data-i18n="nav.login">Đăng nhập</span>
                 </a>
-                <!--------HAMBURGER MENU -------->
-                <a href="javascript:void(0);" class="icon" onclick="myFunction()">
-                    <i class="fa fa-bars"></i>
-                </a>
-
-
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ml-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="#books" data-i18n="nav.books">Sách</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="https://sahityaroy.hashnode.dev/" target="_blank" data-i18n="nav.articles">Bài viết</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="./blog.html" target="_blank" data-i18n="nav.write">Viết bài</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#course" data-i18n="nav.courses">Khóa học</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#start-learning" data-i18n="nav.start">Bắt đầu học</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="quiz.html" data-i18n="nav.quiz">Quiz</a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a id="home-account-link" class="nav-link nav-btn get-btn auth-btn" href="auth.html">
-                                <span id="home-account-avatar" class="home-account-avatar" aria-hidden="true" hidden></span>
-                                <span id="home-account-label" data-i18n="nav.signup">Đăng ký</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link nav-btn get-btn support-btn" href="https://www.buymeacoffee.com/sahityaroy"
-                                target="_blank" data-i18n="nav.support">Ủng hộ</a>
-                        </li>
-                        <li class="nav-item">
-                            <button id="langToggle" class="lang-toggle" type="button" aria-label="Switch to English">EN</button>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+                <button id="langToggle" class="lang-toggle" type="button" aria-label="Switch to English">EN</button>
+            </div>
         </div>
+
+        <section class="category-menu" id="category-menu" aria-label="Danh mục học tập" hidden>
+            <div class="category-menu__rail">
+                <p class="menu-kicker">KHÁM PHÁ EDUHUB</p>
+                <a href="#course"><span>01</span><span data-i18n="nav.courses">Khóa học</span><b aria-hidden="true">›</b></a>
+                <a href="#books"><span>02</span><span data-i18n="nav.books">Sách</span><b aria-hidden="true">›</b></a>
+                <a href="quiz.html"><span>03</span><span data-i18n="nav.quiz">Quiz</span><b aria-hidden="true">›</b></a>
+                <a href="./blog.html"><span>04</span><span data-i18n="nav.articles">Bài viết</span><b aria-hidden="true">›</b></a>
+            </div>
+            <div class="category-menu__content">
+                <div class="menu-heading"><div><p class="menu-kicker">BẮT ĐẦU TỪ ĐÂU?</p><h2 data-i18n="menu.heading">Chọn cách học phù hợp</h2></div><a href="#course" data-i18n="menu.allCourses">Xem tất cả <span aria-hidden="true">↗</span></a></div>
+                <div class="menu-link-grid">
+                    <a href="#course"><small>01 / VIDEO</small><strong data-i18n="menu.recorded">Khóa học quay sẵn</strong><span data-i18n="menu.recordedText">Học theo nhịp độ của riêng bạn.</span></a>
+                    <a href="#start-learning"><small>02 / LIVE</small><strong data-i18n="menu.zoom">Khóa học qua Zoom</strong><span data-i18n="menu.zoomText">Bắt đầu với lộ trình học có hướng dẫn.</span></a>
+                    <a href="#books"><small>03 / ĐỌC</small><strong data-i18n="nav.books">Sách</strong><span data-i18n="menu.booksText">Tài liệu được tuyển chọn cho lập trình viên.</span></a>
+                    <a href="quiz.html"><small>04 / LUYỆN TẬP</small><strong data-i18n="nav.quiz">Quiz</strong><span data-i18n="menu.quizText">Thử sức với các bộ câu hỏi lập trình.</span></a>
+                </div>
+            </div>
+        </section>
     </header>
     <!--
     ==============
@@ -1004,6 +1005,7 @@
         integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
         crossorigin="anonymous"></script>
     <script src="assets/js/auth.js" defer></script>
+    <script src="assets/js/site-search.js" defer></script>
     <script src="assets/js/main.js"></script>
     <script src="assets/js/courses.js"></script>
     <script>

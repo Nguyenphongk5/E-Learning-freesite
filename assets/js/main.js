@@ -36,6 +36,19 @@ const langToggle = document.querySelector('#langToggle');
 
 const translations = {
   vi: {
+    'nav.categories': 'Danh mục',
+    'nav.login': 'Đăng nhập',
+    'search.submit': 'Tìm kiếm',
+    'search.label': 'Tìm khóa học, sách và quiz',
+    'search.placeholder': 'Tìm khóa học, sách, bài tập...',
+    'menu.heading': 'Chọn cách học phù hợp',
+    'menu.allCourses': 'Xem tất cả <span aria-hidden="true">↗</span>',
+    'menu.recorded': 'Khóa học quay sẵn',
+    'menu.recordedText': 'Học theo nhịp độ của riêng bạn.',
+    'menu.zoom': 'Khóa học qua Zoom',
+    'menu.zoomText': 'Bắt đầu với lộ trình học có hướng dẫn.',
+    'menu.booksText': 'Tài liệu được tuyển chọn cho lập trình viên.',
+    'menu.quizText': 'Thử sức với các bộ câu hỏi lập trình.',
     'nav.books': 'Sách',
     'nav.articles': 'Bài viết',
     'nav.write': 'Viết bài',
@@ -80,6 +93,19 @@ const translations = {
     'course.cppText': 'Bắt đầu học lập trình C++'
   },
   en: {
+    'nav.categories': 'Categories',
+    'nav.login': 'Log in',
+    'search.submit': 'Search',
+    'search.label': 'Search courses, books, and quizzes',
+    'search.placeholder': 'Search courses, books, exercises...',
+    'menu.heading': 'Choose how you want to learn',
+    'menu.allCourses': 'Browse all <span aria-hidden="true">↗</span>',
+    'menu.recorded': 'Recorded courses',
+    'menu.recordedText': 'Learn at your own pace.',
+    'menu.zoom': 'Live courses on Zoom',
+    'menu.zoomText': 'Follow a guided learning path.',
+    'menu.booksText': 'Curated resources for developers.',
+    'menu.quizText': 'Practice with programming quizzes.',
     'nav.books': 'Books',
     'nav.articles': 'Articles',
     'nav.write': 'Write',
@@ -140,6 +166,11 @@ function applyTranslations(lang) {
     const ariaLabelKey = element.dataset.i18nAriaLabel;
     if (ariaLabelKey && translationSet[ariaLabelKey]) {
       element.setAttribute('aria-label', translationSet[ariaLabelKey]);
+    }
+
+    const placeholderKey = element.dataset.i18nPlaceholder;
+    if (placeholderKey && translationSet[placeholderKey]) {
+      element.setAttribute('placeholder', translationSet[placeholderKey]);
     }
   });
 

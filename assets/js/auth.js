@@ -86,6 +86,8 @@ async function initHomeAccount() {
         const avatar = document.getElementById("home-account-avatar");
         accountLink.href = account.role === "admin" ? "admin.html" : "user.html";
         accountLink.classList.add("home-account-link");
+        const registerLink = document.getElementById("header-register");
+        if (registerLink) registerLink.hidden = true;
         accountLabel.textContent = accountName;
         accountLabel.classList.add("home-account-name");
         accountLabel.removeAttribute("data-i18n");
