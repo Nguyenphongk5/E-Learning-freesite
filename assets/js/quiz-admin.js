@@ -11,6 +11,51 @@ const examDialog = document.getElementById('examDialog');
 const questionCountInput = document.getElementById('examQuestionCount');
 let exams = loadExams();
 
+async function renderQuizAnalytics() {
+  const status = document.getElementById('quizAnalyticsStatus');
+  const metrics = document.getElementById('quizAnalyticsMetrics');
+  const examStats = document.getElementById('quizExamStats');
+  const recentAttempts = document.getElementById('quizRecentAttempts');
+  if (!status || !metrics || !examStats || !recentAttempts) return;
+
+  status.textContent = 'Đang tải số liệu...';
+  try {
+    const response = await fetch('/api/admin/quiz/statistics', { credentials: 'same-origin' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Không thể tải thống kê.');
+    const summary = data.summary;
+    const accuracy = summary.total_questions
+      ? Math.round(summary.correct_count / summary.total_questions * 100)
+      : 0;
+    const metricItems = [
+      ['Tổng lượt thi', summary.attempts, 'Đã nộp trên hệ thống'],
+      ['Điểm trung bình', `${summary.average_score}%`, 'Trên thang điểm 100'],
+      ['Học viên tham gia', summary.learners, 'Tài khoản đã đăng nhập'],
+      ['Tỷ lệ câu đúng', `${accuracy}%`, 'Tính trên mọi lượt thi'],
+    ];
+    metrics.innerHTML = metricItems.map(([label, value, caption]) => `
+      <article class="analytics-metric"><span>${label}</span><strong>${value}</strong><small>${caption}</small></article>
+    `).join('');
+
+    status.textContent = summary.attempts ? `Đã ghi nhận ${summary.attempts} lượt nộp bài.` : 'Chưa có lượt nộp bài nào trên hệ thống.';
+    examStats.innerHTML = data.exams.length ? data.exams.map((exam) => `
+      <article class="exam-stat-row">
+        <div class="exam-stat-copy"><strong>${escapeHtml(exam.exam_title)}</strong><small>${escapeHtml(exam.subject)} · ${exam.attempts} lượt · cao nhất ${exam.best_score}%</small></div>
+        <div class="exam-stat-score"><span>${exam.average_score}%</span><div class="exam-stat-track"><i style="width:${Math.max(0, Math.min(100, Number(exam.average_score) || 0))}%"></i></div></div>
+      </article>
+    `).join('') : '<p class="analytics-empty">Chưa có dữ liệu theo đề thi.</p>';
+
+    recentAttempts.innerHTML = data.recent.length ? data.recent.map((attempt) => `
+      <tr><td>${escapeHtml(attempt.learner)}</td><td>${escapeHtml(attempt.exam_title)}<small class="attempt-subject">${escapeHtml(attempt.subject)}</small></td><td><strong>${attempt.score}%</strong><small class="attempt-subject">${attempt.correct_count}/${attempt.total_questions} câu</small></td><td>${escapeHtml(attempt.created_at)}</td></tr>
+    `).join('') : '<tr class="empty-row"><td colspan="4">Chưa có lượt nộp bài.</td></tr>';
+  } catch (error) {
+    status.textContent = error.message;
+    metrics.replaceChildren();
+    examStats.innerHTML = '';
+    recentAttempts.innerHTML = '<tr class="empty-row"><td colspan="4">Không tải được dữ liệu.</td></tr>';
+  }
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
@@ -161,7 +206,9 @@ examTableBody.addEventListener('click', (event) => {
 });
 document.getElementById('examSearch').addEventListener('input', renderExams);
 document.getElementById('subjectFilter').addEventListener('change', renderExams);
+document.getElementById('refreshQuizAnalytics').addEventListener('click', renderQuizAnalytics);
 examDialog.addEventListener('click', (event) => { if (event.target === examDialog) closeDialog(); });
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !examDialog.classList.contains('is-hidden')) closeDialog(); });
 
 renderExams();
+renderQuizAnalytics();

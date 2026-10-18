@@ -25,11 +25,13 @@ from models import (
     create_book,
     create_user,
     count_books,
+    create_quiz_attempt,
     delete_book,
     delete_course,
     find_user_by_email,
     get_book_by_id,
     get_course_by_id,
+    get_quiz_statistics,
     get_user_by_id,
     hash_password,
     list_accounts,
@@ -390,6 +392,47 @@ def admin_book_count():
     return jsonify({"count": count_books()})
 
 
+@api_routes.get("/api/admin/quiz/statistics")
+@admin_required
+def admin_quiz_statistics():
+    return jsonify(get_quiz_statistics())
+
+
+@api_routes.post("/api/quiz/attempts")
+def save_quiz_attempt():
+    data = json_payload()
+    exam_id = str(data.get("examId", "")).strip()
+    exam_title = str(data.get("title", "")).strip()
+    subject = str(data.get("subject", "")).strip()
+    correct_count = data.get("correct")
+    total_questions = data.get("total")
+    duration_seconds = data.get("duration")
+
+    if not exam_id or len(exam_id) > 100:
+        return api_error("Mã đề thi không hợp lệ.", 400)
+    if not exam_title or len(exam_title) > 100 or not subject or len(subject) > 60:
+        return api_error("Thông tin đề thi không hợp lệ.", 400)
+    if type(total_questions) is not int or not 1 <= total_questions <= 200:
+        return api_error("Số câu hỏi không hợp lệ.", 400)
+    if type(correct_count) is not int or not 0 <= correct_count <= total_questions:
+        return api_error("Số câu đúng không hợp lệ.", 400)
+    if type(duration_seconds) is not int or not 0 <= duration_seconds <= 18000:
+        return api_error("Thời gian làm bài không hợp lệ.", 400)
+
+    user_id = session.get("user_id")
+    if user_id and not get_user_by_id(user_id):
+        user_id = None
+    attempt_id = create_quiz_attempt({
+        "exam_id": exam_id,
+        "exam_title": exam_title,
+        "subject": subject,
+        "correct_count": correct_count,
+        "total_questions": total_questions,
+        "duration_seconds": duration_seconds,
+    }, user_id)
+    return jsonify({"id": attempt_id, "message": "Đã lưu kết quả bài thi."}), 201
+
+
 @api_routes.post("/api/admin/users")
 @admin_required
 def create_admin():
@@ -413,6 +456,14 @@ def create_admin():
 @page_routes.get("/")
 def homepage():
     return render_template("index.html", books=list_books())
+
+
+@page_routes.get("/courses/<int:course_id>")
+def course_detail_page(course_id):
+    course = get_course_by_id(course_id)
+    if not course:
+        abort(404)
+    return render_template("course-detail.html", course=course)
 
 
 @page_routes.get("/uploads/<path:filename>")

@@ -120,6 +120,7 @@ def initialize_database(app):
             description TEXT NOT NULL,
             image_url TEXT NOT NULL DEFAULT '',
             course_url TEXT NOT NULL,
+            details TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS books (
@@ -132,8 +133,27 @@ def initialize_database(app):
             document_url TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS quiz_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            exam_id TEXT NOT NULL,
+            exam_title TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            correct_count INTEGER NOT NULL,
+            total_questions INTEGER NOT NULL,
+            score INTEGER NOT NULL,
+            duration_seconds INTEGER NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_quiz_attempts_created_at
+            ON quiz_attempts(created_at DESC, id DESC);
+        CREATE INDEX IF NOT EXISTS idx_quiz_attempts_exam_id
+            ON quiz_attempts(exam_id);
         """
     )
+    course_columns = {row["name"] for row in connection.execute("PRAGMA table_info(courses)")}
+    if "details" not in course_columns:
+        connection.execute("ALTER TABLE courses ADD COLUMN details TEXT NOT NULL DEFAULT ''")
     if connection.execute("SELECT COUNT(*) FROM courses").fetchone()[0] == 0:
         connection.executemany(
             "INSERT INTO courses (title, description, image_url, course_url) VALUES (?, ?, ?, ?)",
@@ -186,12 +206,15 @@ def public_account(user):
 def validate_course(data):
     title = str(data.get("title", "")).strip()
     description = str(data.get("description", "")).strip()
+    details = str(data.get("details", "")).strip()
     image_url = str(data.get("image_url", "")).strip()
     course_url = str(data.get("course_url", "")).strip()
     if not title or len(title) > 150:
         return None, "Tên khóa học cần có từ 1 đến 150 ký tự."
     if len(description) > 1200:
         return None, "Mô tả không được vượt quá 1200 ký tự."
+    if len(details) > 5000:
+        return None, "Nội dung chi tiết không được vượt quá 5000 ký tự."
     parsed_course_url = urlsplit(course_url)
     if parsed_course_url.scheme not in {"http", "https"} or not parsed_course_url.netloc:
         return None, "Liên kết khóa học phải bắt đầu bằng http:// hoặc https://."
@@ -205,6 +228,7 @@ def validate_course(data):
     return {
         "title": title,
         "description": description,
+        "details": details,
         "image_url": image_url,
         "course_url": course_url,
     }, None
@@ -235,6 +259,58 @@ def list_accounts():
     ).fetchall()
 
 
+def create_quiz_attempt(data, user_id=None):
+    score = round(data["correct_count"] / data["total_questions"] * 100)
+    cursor = get_database().execute(
+        "INSERT INTO quiz_attempts "
+        "(user_id, exam_id, exam_title, subject, correct_count, total_questions, score, duration_seconds) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            user_id,
+            data["exam_id"],
+            data["exam_title"],
+            data["subject"],
+            data["correct_count"],
+            data["total_questions"],
+            score,
+            data["duration_seconds"],
+        ),
+    )
+    get_database().commit()
+    return cursor.lastrowid
+
+
+def get_quiz_statistics():
+    database = get_database()
+    summary = database.execute(
+        "SELECT COUNT(*) AS attempts, "
+        "COALESCE(ROUND(AVG(score)), 0) AS average_score, "
+        "COUNT(DISTINCT user_id) AS learners, "
+        "COALESCE(SUM(correct_count), 0) AS correct_count, "
+        "COALESCE(SUM(total_questions), 0) AS total_questions "
+        "FROM quiz_attempts"
+    ).fetchone()
+    exams = database.execute(
+        "SELECT exam_id, exam_title, subject, COUNT(*) AS attempts, "
+        "ROUND(AVG(score)) AS average_score, MAX(score) AS best_score "
+        "FROM quiz_attempts GROUP BY exam_id, exam_title, subject "
+        "ORDER BY attempts DESC, exam_title COLLATE NOCASE"
+    ).fetchall()
+    recent = database.execute(
+        "SELECT quiz_attempts.id, quiz_attempts.exam_title, quiz_attempts.subject, "
+        "quiz_attempts.correct_count, quiz_attempts.total_questions, quiz_attempts.score, "
+        "quiz_attempts.duration_seconds, quiz_attempts.created_at, "
+        "COALESCE(users.name, 'Khách') AS learner "
+        "FROM quiz_attempts LEFT JOIN users ON users.id = quiz_attempts.user_id "
+        "ORDER BY quiz_attempts.id DESC LIMIT 20"
+    ).fetchall()
+    return {
+        "summary": dict(summary),
+        "exams": [dict(exam) for exam in exams],
+        "recent": [dict(attempt) for attempt in recent],
+    }
+
+
 def list_courses():
     return get_database().execute("SELECT * FROM courses ORDER BY id ASC").fetchall()
 
@@ -245,8 +321,8 @@ def get_course_by_id(course_id):
 
 def create_course(data):
     cursor = get_database().execute(
-        "INSERT INTO courses (title, description, image_url, course_url) VALUES (?, ?, ?, ?)",
-        (data["title"], data["description"], data["image_url"], data["course_url"]),
+        "INSERT INTO courses (title, description, image_url, course_url, details) VALUES (?, ?, ?, ?, ?)",
+        (data["title"], data["description"], data["image_url"], data["course_url"], data["details"]),
     )
     get_database().commit()
     return cursor.lastrowid
@@ -254,8 +330,8 @@ def create_course(data):
 
 def update_course(course_id, data):
     cursor = get_database().execute(
-        "UPDATE courses SET title = ?, description = ?, image_url = ?, course_url = ? WHERE id = ?",
-        (data["title"], data["description"], data["image_url"], data["course_url"], course_id),
+        "UPDATE courses SET title = ?, description = ?, image_url = ?, course_url = ?, details = ? WHERE id = ?",
+        (data["title"], data["description"], data["image_url"], data["course_url"], data["details"], course_id),
     )
     if cursor.rowcount:
         get_database().commit()

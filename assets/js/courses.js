@@ -53,10 +53,8 @@ function createCourseCard(course) {
     description.textContent = course.description;
     const link = document.createElement("a");
     link.className = "nav-link nav-btn";
-    link.href = course.course_url;
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    link.textContent = "Enroll";
+    link.href = `/courses/${encodeURIComponent(course.id)}`;
+    link.textContent = "Chi tiết khóa học";
     body.append(title, description, link);
     card.append(body);
     return card;

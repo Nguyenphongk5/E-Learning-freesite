@@ -99,6 +99,7 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         created = self.client.post("/api/courses", json={
             "title": "Python",
             "description": "Python cơ bản",
+            "details": "Nền tảng Python\nThực hành dự án",
             "image_url": "images/picture/card-1.png",
             "course_url": "https://example.com/python",
         })
@@ -108,14 +109,20 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         updated = self.client.put(f"/api/courses/{course_id}", json={
             "title": "Python nâng cao",
             "description": "Nội dung đã sửa",
+            "details": "Nội dung chi tiết đã cập nhật",
             "image_url": "",
             "course_url": "https://example.com/advanced-python",
         })
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json["title"], "Python nâng cao")
+        self.assertEqual(updated.json["details"], "Nội dung chi tiết đã cập nhật")
+        detail_page = self.client.get(f"/courses/{course_id}")
+        self.assertEqual(detail_page.status_code, 200)
+        self.assertIn("Nội dung chi tiết đã cập nhật", detail_page.get_data(as_text=True))
         self.assertEqual(self.client.put("/api/courses/99999", json=updated.json).status_code, 404)
         self.assertEqual(self.client.delete(f"/api/courses/{course_id}").status_code, 200)
         self.assertEqual(self.client.delete(f"/api/courses/{course_id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/courses/{course_id}").status_code, 404)
 
     def test_admin_accounts_can_only_be_created_inside_admin_session(self):
         unauthorized = self.client.post("/api/admin/users", json={
@@ -134,6 +141,42 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertEqual(created.status_code, 201)
         self.assertEqual(created.json["role"], "admin")
         self.assertNotIn("password_hash", created.json)
+
+    def test_quiz_attempts_are_saved_and_summarized_for_admin(self):
+        attempt = {
+            "examId": "javascript-basics",
+            "title": "JavaScript căn bản",
+            "subject": "JavaScript",
+            "correct": 4,
+            "total": 5,
+            "duration": 95,
+            "score": 100,
+        }
+        self.assertEqual(self.client.get("/api/admin/quiz/statistics").status_code, 401)
+        saved = self.client.post("/api/quiz/attempts", json=attempt)
+        self.assertEqual(saved.status_code, 201)
+        self.login_admin()
+        report = self.client.get("/api/admin/quiz/statistics")
+        self.assertEqual(report.status_code, 200)
+        self.assertEqual(report.json["summary"]["attempts"], 1)
+        self.assertEqual(report.json["summary"]["average_score"], 80)
+        self.assertEqual(report.json["summary"]["learners"], 0)
+        self.assertEqual(report.json["exams"][0]["exam_title"], "JavaScript căn bản")
+        self.assertEqual(report.json["recent"][0]["learner"], "Khách")
+        self.assertEqual(report.json["recent"][0]["score"], 80)
+
+    def test_quiz_attempt_validation_and_admin_access(self):
+        invalid = self.client.post("/api/quiz/attempts", json={
+            "examId": "quiz",
+            "title": "Quiz",
+            "subject": "Lập trình",
+            "correct": 8,
+            "total": 5,
+            "duration": 60,
+        })
+        self.assertEqual(invalid.status_code, 400)
+        self.register_user()
+        self.assertEqual(self.client.get("/api/admin/quiz/statistics").status_code, 403)
 
     def test_default_admin_account_is_created_with_a_hashed_password(self):
         with tempfile.TemporaryDirectory() as temp_dir, patch.dict(os.environ, {

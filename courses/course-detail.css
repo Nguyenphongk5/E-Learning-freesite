@@ -9,7 +9,7 @@ body {
   font-family: Poppins, "Segoe UI", sans-serif;
 }
 
-.course-page {
+  .course-page {
   width: min(100% - 36px, 960px);
   margin: 0 auto;
   padding: 28px 0 64px;
@@ -22,7 +22,7 @@ body {
   text-decoration: none;
 }
 
-.course-content {
+  .course-content {
   margin-top: 52px;
   padding: clamp(24px, 6vw, 64px);
   border: 1px solid #dce9df;
@@ -60,7 +60,7 @@ h1 {
   gap: 14px;
 }
 
-.course-actions a {
+  .course-actions a {
   display: inline-flex;
   min-height: 46px;
   align-items: center;
@@ -86,15 +86,15 @@ h1 {
 }
 
 @media (max-width: 520px) {
-  .course-page {
+	.course-page {
     width: min(100% - 24px, 960px);
   }
 
-  .course-content {
+	.course-content {
     margin-top: 32px;
   }
 
-  .course-actions a {
+	.course-actions a {
     width: 100%;
   }
 }

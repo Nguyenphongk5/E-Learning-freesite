@@ -193,6 +193,7 @@ async function initAdminForms() {
             courseForm.elements.id.value = course.id;
             courseForm.elements.title.value = course.title;
             courseForm.elements.description.value = course.description;
+            courseForm.elements.details.value = course.details || "";
             courseForm.elements.image_url.value = course.image_url;
             courseForm.elements.course_url.value = course.course_url;
             document.getElementById("course-form-title").textContent = "Sửa khóa học";
@@ -251,6 +252,7 @@ async function initAdminForms() {
         const data = {
             title: courseForm.elements.title.value.trim(),
             description: courseForm.elements.description.value.trim(),
+            details: courseForm.elements.details.value.trim(),
             image_url: courseForm.elements.image_url.value.trim(),
             course_url: courseForm.elements.course_url.value.trim(),
         };

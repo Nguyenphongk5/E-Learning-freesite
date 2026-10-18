@@ -39,6 +39,34 @@
         <button id="addExamBtn" class="primary-button" type="button"><span aria-hidden="true">＋</span> Tạo đề thi</button>
       </section>
 
+      <section class="analytics-panel" aria-labelledby="quizAnalyticsHeading">
+        <div class="analytics-heading">
+          <div>
+            <p class="eyebrow">BÁO CÁO HỌC TẬP</p>
+            <h2 id="quizAnalyticsHeading">Thống kê kết quả quiz</h2>
+            <p class="intro-copy">Tổng hợp các lượt nộp bài trên toàn hệ thống.</p>
+          </div>
+          <button id="refreshQuizAnalytics" class="secondary-button" type="button" aria-label="Làm mới thống kê">↻ Làm mới</button>
+        </div>
+        <p id="quizAnalyticsStatus" class="analytics-status" role="status" aria-live="polite">Đang tải số liệu...</p>
+        <div id="quizAnalyticsMetrics" class="analytics-metrics"></div>
+        <div class="analytics-details">
+          <section class="analytics-block" aria-labelledby="examStatsHeading">
+            <h3 id="examStatsHeading">Kết quả theo đề thi</h3>
+            <div id="quizExamStats" class="exam-stats-list"></div>
+          </section>
+          <section class="analytics-block" aria-labelledby="recentAttemptsHeading">
+            <h3 id="recentAttemptsHeading">Lượt nộp gần đây</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th scope="col">Học viên</th><th scope="col">Đề thi</th><th scope="col">Điểm</th><th scope="col">Thời gian</th></tr></thead>
+                <tbody id="quizRecentAttempts"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <section class="catalog-panel" aria-labelledby="catalogHeading">
         <div class="catalog-heading">
           <div>

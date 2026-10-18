@@ -142,7 +142,7 @@ function renderQuestion() {
   $('#nextQuestionBtn').disabled = questionIndex === activeExam.questions.length - 1;
 }
 
-function submitExam(timedOut = false) {
+async function submitExam(timedOut = false) {
   if (!activeExam || resultData) return;
   const unanswered = answers.filter((answer) => answer === null).length;
   if (!timedOut && unanswered && !confirm(`Bạn còn ${unanswered} câu chưa trả lời. Vẫn nộp bài?`)) return;
@@ -161,6 +161,17 @@ function submitExam(timedOut = false) {
   renderHistory();
   renderAnalytics();
   showView('result');
+  try {
+    const response = await fetch('/api/quiz/attempts', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(result),
+    });
+    if (!response.ok) throw new Error('Không thể đồng bộ kết quả.');
+  } catch {
+    $('#resultMessage').textContent += ' Kết quả chỉ được lưu trên trình duyệt này.';
+  }
 }
 
 function renderResult(result, timedOut) {
