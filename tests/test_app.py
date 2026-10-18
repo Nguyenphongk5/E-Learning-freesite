@@ -502,6 +502,8 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertIn('id="category-menu"', homepage)
         self.assertIn('id="site-search-input"', homepage)
         self.assertIn('id="header-register"', homepage)
+        self.assertIn('id="books-show-more"', homepage)
+        self.assertIn('id="courses-show-more"', homepage)
 
         for path in (
             "/assets/css/admin-dashboard.css",

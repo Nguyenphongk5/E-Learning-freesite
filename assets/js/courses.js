@@ -5,6 +5,7 @@ async function loadCourseCatalog() {
 
     sections.filter((section) => section !== catalogSection).forEach((section) => section.remove());
     const catalog = catalogSection.querySelector(".card-deck");
+    const showMoreButton = catalogSection.querySelector("#courses-show-more");
     if (!catalog) return;
     catalog.className = "course-catalog";
     catalog.id = "course-catalog";
@@ -20,34 +21,52 @@ async function loadCourseCatalog() {
             return;
         }
         courses.forEach((course) => catalog.append(createCourseCard(course)));
+        updateCourseVisibility(catalog, showMoreButton, false);
     } catch {
         catalog.replaceChildren(makeCourseStatus("Không kết nối được máy chủ khóa học. Hãy chạy backend Python."));
     }
+}
+
+function updateCourseVisibility(catalog, button, expanded) {
+    const cards = Array.from(catalog.querySelectorAll(":scope > .card"));
+    cards.forEach((card, index) => {
+        card.hidden = !expanded && index >= 4;
+    });
+    if (!button) return;
+
+    button.hidden = cards.length <= 4;
+    button.setAttribute("aria-expanded", String(expanded));
+    const remaining = Math.max(0, cards.length - 4);
+    button.textContent = document.documentElement.lang === "en"
+        ? (expanded ? "Show fewer courses" : `Show ${remaining} more courses`)
+        : (expanded ? "Thu gọn" : `Xem thêm ${remaining} khóa học`);
 }
 
 function createCourseCard(course) {
     const card = document.createElement("article");
     card.className = "card";
 
+    const art = document.createElement("div");
+    art.className = "course-card-art";
     if (course.image_url) {
         const image = document.createElement("img");
-        image.className = "card-img-top";
+        image.className = "course-card-art__image";
         image.src = course.image_url;
         image.alt = course.title;
         image.loading = "lazy";
-        card.append(image);
-    } else {
-        const placeholder = document.createElement("div");
-        placeholder.className = "course-placeholder";
-        placeholder.textContent = course.title.slice(0, 1).toUpperCase();
-        card.append(placeholder);
+        art.append(image);
     }
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "course-card-art__eyebrow";
+    eyebrow.textContent = "EDUHUB  /  KHÓA HỌC";
+    const artTitle = document.createElement("strong");
+    artTitle.className = "course-card-art__title";
+    artTitle.textContent = course.title;
+    art.append(eyebrow, artTitle);
+    card.append(art);
 
     const body = document.createElement("div");
     body.className = "card-body";
-    const title = document.createElement("h3");
-    title.className = "card-title";
-    title.textContent = course.title;
     const description = document.createElement("p");
     description.className = "card-text";
     description.textContent = course.description;
@@ -55,7 +74,7 @@ function createCourseCard(course) {
     link.className = "nav-link nav-btn";
     link.href = `/courses/${encodeURIComponent(course.id)}`;
     link.textContent = "Chi tiết khóa học";
-    body.append(title, description, link);
+    body.append(description, link);
     card.append(body);
     return card;
 }
@@ -68,4 +87,17 @@ function makeCourseStatus(message) {
     return status;
 }
 
-document.addEventListener("DOMContentLoaded", loadCourseCatalog);
+document.addEventListener("DOMContentLoaded", () => {
+    loadCourseCatalog();
+    const showMoreButton = document.getElementById("courses-show-more");
+    let expanded = false;
+    showMoreButton?.addEventListener("click", () => {
+        const catalog = document.getElementById("course-catalog");
+        if (!catalog) return;
+        expanded = !expanded;
+        updateCourseVisibility(catalog, showMoreButton, expanded);
+        if (!expanded) {
+            document.querySelector("#course .title-text")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    });
+});

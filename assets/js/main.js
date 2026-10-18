@@ -32,6 +32,7 @@ const bookSearch = document.querySelector('#book-search');
 const bookFilters = document.querySelectorAll('[data-book-filter]');
 const bookResults = document.querySelector('#book-results');
 const bookEmpty = document.querySelector('#book-empty');
+const booksShowMore = document.querySelector('#books-show-more');
 const langToggle = document.querySelector('#langToggle');
 
 const translations = {
@@ -285,6 +286,7 @@ if (courseCarousel) {
 if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
   const bookCards = Array.from(bookGrid.querySelectorAll('.book-card'));
   let activeCategory = 'all';
+  let booksExpanded = false;
 
   if (bookCards.length === 0) {
     bookResults.hidden = true;
@@ -293,7 +295,7 @@ if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
 
   function filterBooks() {
     const searchTerm = bookSearch.value.trim().toLocaleLowerCase();
-    let visibleCount = 0;
+    const matchingCards = [];
 
     bookCards.forEach((card) => {
       const matchesCategory =
@@ -301,15 +303,24 @@ if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
       const searchableText =
         `${card.dataset.title} ${card.dataset.author}`.toLocaleLowerCase();
       const matchesSearch = searchableText.includes(searchTerm);
-      const isVisible = matchesCategory && matchesSearch;
-
-      card.hidden = !isVisible;
-      if (isVisible) visibleCount += 1;
+      if (matchesCategory && matchesSearch) matchingCards.push(card);
     });
 
-    bookResults.textContent = `Hiển thị ${visibleCount} trong ${bookCards.length} cuốn sách`;
+    matchingCards.forEach((card, index) => {
+      card.hidden = !booksExpanded && index >= 4;
+    });
+    const visibleCount = matchingCards.length;
+    bookResults.textContent = `Tìm thấy ${visibleCount} trong ${bookCards.length} cuốn sách`;
     bookResults.hidden = bookCards.length === 0;
     bookEmpty.hidden = bookCards.length === 0 || visibleCount > 0;
+
+    if (booksShowMore) {
+      booksShowMore.hidden = visibleCount <= 4;
+      booksShowMore.setAttribute('aria-expanded', String(booksExpanded));
+      booksShowMore.textContent = document.documentElement.lang === 'en'
+        ? (booksExpanded ? 'Show fewer books' : `Show ${visibleCount - 4} more books`)
+        : (booksExpanded ? 'Thu gọn' : `Xem thêm ${visibleCount - 4} sách`);
+    }
   }
 
   bookFilters.forEach((filter) => {
@@ -325,5 +336,12 @@ if (bookGrid && bookSearch && bookResults && bookEmpty && bookFilters.length) {
   });
 
   bookSearch.addEventListener('input', filterBooks);
+  booksShowMore?.addEventListener('click', () => {
+    booksExpanded = !booksExpanded;
+    filterBooks();
+    if (!booksExpanded) {
+      document.querySelector('#books .books-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
   filterBooks();
 }

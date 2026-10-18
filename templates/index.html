@@ -216,7 +216,7 @@
                     {% endif %}
                     <article class="book-card" data-category="{{ filter_category }}"
                         data-title="{{ book['title'] }}" data-author="{{ book['author'] }}">
-                        {% if book["cover_image"] %}
+                        {% if book["cover_image"].startswith('/static/uploads/books/') %}
                             <img class="book-cover-image" src="{{ book['cover_image'] }}"
                                 alt="Bìa sách {{ book['title'] }}" loading="lazy">
                         {% else %}
@@ -240,6 +240,7 @@
                     <p class="books-library-empty">Chưa có cuốn sách nào trong thư viện.</p>
                 {% endfor %}
             </div>
+            <button class="library-more-button" id="books-show-more" type="button" aria-controls="book-grid" aria-expanded="false" hidden>Xem thêm sách</button>
             <p class="book-empty" id="book-empty" hidden>Không tìm thấy sách phù hợp. Hãy thử từ khóa hoặc danh mục khác.</p>
         </div>
     </section>
@@ -365,6 +366,7 @@
                     </div>
                 </div>
             </div>
+            <button class="library-more-button" id="courses-show-more" type="button" aria-controls="course-catalog" aria-expanded="false" hidden>Xem thêm khóa học</button>
         </div>
     </section>
 

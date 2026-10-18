@@ -619,12 +619,63 @@ p{
   margin-bottom: 60px;
 }
 
+.books-section .books-heading,
+.course-section > .container > .title-text {
+  max-width: 1280px;
+  margin-right: auto;
+  margin-left: auto;
+  text-align: left !important;
+}
+
+.books-section .books-heading .title-text,
+.course-section > .container > .title-text {
+  margin-bottom: 12px;
+  color: #242c26;
+  font-size: clamp(28px, 3vw, 36px);
+  line-height: 1.2;
+}
+
+.books-section .books-intro {
+  margin: 0;
+  color: #6c756e;
+  font-size: 14px;
+  text-align: left;
+}
+
+.library-more-button {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 30px auto 0;
+  padding: 0 22px;
+  border: 1px solid #e94c20;
+  border-radius: 999px;
+  background: #fff;
+  color: #c73b18;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+
+.library-more-button:hover {
+  transform: translateY(-1px);
+  background: #e94c20;
+  color: #fff;
+}
+
+.library-more-button[hidden],
+.book-card[hidden],
+.course-catalog > .card[hidden] {
+  display: none !important;
+}
+
 .card-deck,
 .course-catalog {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
-  width: min(1280px, calc(100% - 30px));
+  width: min(1280px, 100%);
   margin: 0 auto;
   justify-items: center;
   align-items: stretch;
@@ -646,6 +697,20 @@ p{
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.course-catalog > .card {
+  max-width: none;
+  min-height: 420px;
+  border: 1px solid #e7ebe5;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(23, 43, 36, .06);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.course-catalog > .card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 32px rgba(23, 43, 36, .12);
 }
 
 .course-section .card {
@@ -672,6 +737,75 @@ p{
   object-fit: cover;
 }
 
+.course-card-art {
+  position: relative;
+  min-height: 215px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  overflow: hidden;
+  padding: 25px 26px;
+  background: repeating-linear-gradient(135deg, #14343d 0 2px, #1b4550 2px 18px);
+  color: #fff;
+}
+
+.course-card-art:after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(11, 25, 32, .77), rgba(11, 25, 32, .18));
+  content: "";
+  pointer-events: none;
+}
+
+.course-card-art__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .55;
+}
+
+.course-card-art__eyebrow,
+.course-card-art__title {
+  position: relative;
+  z-index: 1;
+}
+
+.course-card-art__eyebrow {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.course-card-art__title {
+  max-width: 100%;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #fff;
+  font: 800 24px/1.15 "Manrope", sans-serif;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.course-catalog > .card:nth-child(4n + 2) .course-card-art {
+  background-color: #9d4d09;
+  background-image: repeating-linear-gradient(135deg, #9b4b08 0 2px, #b65c0b 2px 18px);
+}
+
+.course-catalog > .card:nth-child(4n + 3) .course-card-art {
+  background-color: #274d78;
+  background-image: repeating-linear-gradient(135deg, #274d78 0 2px, #345f8e 2px 18px);
+}
+
+.course-catalog > .card:nth-child(4n) .course-card-art {
+  background-color: #08717a;
+  background-image: repeating-linear-gradient(135deg, #08717a 0 2px, #10838a 2px 18px);
+}
+
 .card-body {
   display: flex;
   flex-direction: column;
@@ -694,6 +828,24 @@ p{
   -webkit-line-clamp: 2;
   min-height: 72px;
   overflow: hidden;
+}
+
+.course-catalog .card-body h3.card-title {
+  min-height: 0;
+  margin: 0 0 10px;
+  color: #242c26;
+  font: 800 18px/1.35 "Manrope", sans-serif;
+}
+
+.course-catalog .card-body p.card-text {
+  min-height: 45px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #69736b;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .card-body p {
@@ -725,6 +877,24 @@ p{
   padding: 6px 16px;
   border-radius: 20px;
   white-space: nowrap;
+}
+
+.course-catalog .card-body .nav-btn {
+  align-self: stretch;
+  min-height: 43px;
+  margin-top: auto;
+  border: 1px solid #e94c20;
+  border-radius: 999px;
+  background: #fff;
+  color: #c73b18 !important;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background .16s ease, color .16s ease;
+}
+
+.course-catalog .card-body .nav-btn:hover {
+  background: #e94c20;
+  color: #fff !important;
 }
 
 .buy-btn {
@@ -1368,10 +1538,21 @@ p{
   gap: 24px;
 }
 
+.book-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  align-items: stretch;
+  gap: 22px;
+}
+
 .book-card {
+  min-width: 0;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid #e7efe9;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(23, 43, 36, 0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -1458,6 +1639,9 @@ p{
 }
 
 .book-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 18px;
 }
 
@@ -1505,6 +1689,8 @@ p{
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .book-action:hover {
@@ -1525,6 +1711,16 @@ p{
   .book-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .course-catalog {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .course-catalog > .card {
+    max-width: none !important;
+    flex: initial !important;
+  }
 }
 
 @media (max-width: 767px) {
@@ -1542,6 +1738,16 @@ p{
     gap: 16px;
   }
 
+  .course-catalog {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 16px;
+  }
+
+  .course-catalog > .card {
+    min-height: 390px;
+  }
+
   .book-cover {
     min-height: 190px;
     padding: 16px;
@@ -1555,6 +1761,11 @@ p{
 @media (max-width: 480px) {
   .book-grid {
     grid-template-columns: 1fr;
+  }
+
+  .course-catalog {
+    grid-template-columns: 1fr;
+    width: min(100%, 420px);
   }
 
   .book-cover {
