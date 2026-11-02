@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giỏ hàng sách</title>
+  <link rel="stylesheet" href="gio-hang.css">
+</head>
+<body>
+  <header class="cart-header">
+    <a class="brand" href="index.html">Thư viện sách lập trình</a>
+    <a class="back-link" href="index.html">Tiếp tục xem sách</a>
+  </header>
+
+  <main class="cart-main">
+    <div class="page-heading">
+      <p class="eyebrow">THƯ VIỆN SÁCH</p>
+      <h1>Giỏ hàng</h1>
+      <p id="cart-status" aria-live="polite"></p>
+    </div>
+
+    <div class="cart-layout">
+      <section id="cart-items" class="cart-items" aria-label="Sách trong giỏ hàng"></section>
+      <aside class="order-summary" aria-label="Tóm tắt đơn hàng">
+        <h2>Tóm tắt đơn hàng</h2>
+        <div class="summary-line">
+          <span>Số lượng sách</span>
+          <span id="summary-count">0</span>
+        </div>
+        <div class="summary-line total-line">
+          <span>Tổng cộng</span>
+          <strong id="summary-total">0 ₫</strong>
+        </div>
+        <p class="checkout-note">Chức năng thanh toán chưa được tích hợp.</p>
+        <a class="continue-button" href="index.html">Khám phá thêm sách</a>
+      </aside>
+    </div>
+  </main>
+
+  <script src="cart.js"></script>
+  <script>
+    const itemContainer = document.getElementById("cart-items");
+    const status = document.getElementById("cart-status");
+    const currency = amount => `${amount.toLocaleString("vi-VN")} ₫`;
+
+    function renderCart(message) {
+      const items = BookCart.getItems();
+      document.getElementById("summary-count").textContent = BookCart.getCount();
+      document.getElementById("summary-total").textContent = currency(BookCart.getTotal());
+      status.textContent = message || (items.length ? `${BookCart.getCount()} sản phẩm trong giỏ hàng` : "");
+
+      if (!items.length) {
+        itemContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true">🛒</div>
+            <h2>Giỏ hàng đang trống</h2>
+            <p>Chọn một cuốn sách để bắt đầu.</p>
+            <a href="index.html">Xem danh sách sách</a>
+          </div>`;
+        return;
+      }
+
+      itemContainer.innerHTML = items.map(({ book, quantity, lineTotal }) => `
+        <article class="cart-item" data-item-id="${book.id}">
+            <div class="cover">
+              <img src="${book.cover}" alt="Bìa sách ${book.name}" loading="lazy" onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+              <span class="cover-fallback" hidden>${book.name}</span>
+            </div>
+          <div class="item-details">
+            <h2>${book.name}</h2>
+            <p>${book.author}</p>
+            <span class="unit-price">${currency(book.price)} / cuốn</span>
+          </div>
+          <div class="item-actions">
+            <div class="quantity-control" aria-label="Số lượng ${book.name}">
+              <button type="button" data-action="decrease" aria-label="Giảm số lượng ${book.name}">−</button>
+              <output>${quantity}</output>
+              <button type="button" data-action="increase" aria-label="Tăng số lượng ${book.name}">+</button>
+            </div>
+            <strong class="line-total">${currency(lineTotal)}</strong>
+            <button type="button" class="remove-button" data-action="remove">Xóa</button>
+          </div>
+        </article>`).join("");
+    }
+
+    itemContainer.addEventListener("click", event => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const row = button.closest("[data-item-id]");
+      const id = Number(row.dataset.itemId);
+      const item = BookCart.getItems().find(entry => entry.book.id === id);
+      let result;
+
+      if (button.dataset.action === "remove") result = BookCart.remove(id);
+      else if (button.dataset.action === "increase") result = BookCart.setQuantity(id, item.quantity + 1);
+      else result = BookCart.setQuantity(id, Math.max(1, item.quantity - 1));
+
+      renderCart(result.message);
+      status.setAttribute("role", result.ok ? "status" : "alert");
+    });
+
+    window.addEventListener("storage", event => {
+      if (event.key === BookCart.storageKey) renderCart();
+    });
+
+    renderCart();
+  </script>
+</body>
+</html>

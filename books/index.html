@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174a43">
+  <meta name="description" content="Khám phá sách lập trình được tuyển chọn cho hành trình học và xây dựng sản phẩm công nghệ.">
+  <title>Thư viện sách lập trình | Sách công nghệ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://covers.openlibrary.org">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="books.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-main page-width">
+      <a class="brand" href="index.html" aria-label="Thư viện sách lập trình, trang chủ">
+        <span class="brand-mark" aria-hidden="true">LT</span>
+        <span class="brand-name">Thư viện <strong>sách lập trình</strong></span>
+      </a>
+      <a class="home-link" href="../index.html" aria-label="Trang chủ E-Learning" title="Trang chủ E-Learning">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"></path><path d="M5.5 9v11h13V9M9.5 20v-6h5v6"></path></svg>
+        <span>Trang chủ</span>
+      </a>
+      <label class="search-box">
+        <span class="sr-only">Tìm theo tên sách</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+        <input id="book-search" type="search" placeholder="Tìm sách, ngôn ngữ, chủ đề..." autocomplete="off">
+        <kbd>⌘ K</kbd>
+      </label>
+      <a class="cart-link" href="gio-hang.html" aria-label="Mở giỏ hàng">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 1.9-1.4L21 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+        <span>Giỏ hàng</span><span class="cart-badge" id="cart-count">0</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero page-width">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> MỞ RỘNG TỦ SÁCH CỦA BẠN</p>
+        <h1>Đọc sâu hơn.<br><em>Xây tốt hơn.</em></h1>
+        <p class="hero-description">Những cuốn sách lập trình đáng đọc, từ dòng code đầu tiên đến hệ thống bạn tự hào tạo ra.</p>
+        <a class="hero-cta" href="#all-books">Khám phá sách <span aria-hidden="true">↘</span></a>
+        <div class="hero-note"><strong>12</strong><span>đầu sách được tuyển chọn<br>cho người làm công nghệ</span></div>
+      </div>
+      <div class="hero-art" aria-label="Bìa sách lập trình nổi bật">
+        <div class="hero-ribbon">ĐỌC · HỌC · TẠO</div>
+        <img id="hero-cover" src="https://covers.openlibrary.org/b/isbn/9780321714114-L.jpg?default=false" alt="Bìa sách C++ Primer">
+        <div class="hero-image-fallback" hidden><span>C/C++ · SÁCH NỀN TẢNG</span><strong>C++ Primer</strong><small>Stanley B. Lippman · Josée Lajoie · Barbara E. Moo</small></div>
+        <div class="hero-caption"><span>ĐIỂM BẮT ĐẦU</span><strong>C++ Primer</strong></div>
+      </div>
+      <div class="hero-index" aria-hidden="true">01 / 12</div>
+    </section>
+
+    <section class="category-section page-width" aria-labelledby="category-title">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">TÌM THEO LĨNH VỰC</p><h2 id="category-title">Bạn đang học gì?</h2></div>
+        <span class="side-note">Chọn một chủ đề để bắt đầu</span>
+      </div>
+      <div class="category-list" id="category-list" aria-label="Lọc theo danh mục"></div>
+    </section>
+
+    <section class="featured-section" aria-labelledby="featured-title">
+      <div class="page-width">
+        <div class="section-heading">
+          <div><p class="eyebrow">ĐƯỢC ĐỘI NGŨ TUYỂN CHỌN</p><h2 id="featured-title">Sách nổi bật</h2></div>
+          <a class="text-link" href="#all-books">Xem tất cả sách <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="book-grid featured-grid" id="featured-books"></div>
+      </div>
+    </section>
+
+    <section class="all-books-section page-width" id="all-books" aria-labelledby="all-books-title">
+      <div class="section-heading all-books-heading">
+        <div><p class="eyebrow">THƯ VIỆN</p><h2 id="all-books-title">Tất cả sách</h2></div>
+        <label class="sort-control">Sắp xếp
+          <select id="sort-books" aria-label="Sắp xếp sách theo giá">
+            <option value="featured">Đề xuất</option>
+            <option value="price-asc">Giá tăng dần</option>
+            <option value="price-desc">Giá giảm dần</option>
+          </select>
+        </label>
+      </div>
+      <div class="filter-summary"><span id="result-count"></span><button id="clear-filters" type="button" hidden>Xóa bộ lọc</button></div>
+      <div class="book-grid" id="book-list"></div>
+      <p class="empty-results" id="empty-results" hidden>Chưa tìm thấy sách phù hợp. Hãy thử từ khóa hoặc danh mục khác.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width footer-content">
+      <a class="brand footer-brand" href="index.html"><span class="brand-mark" aria-hidden="true">LT</span><span class="brand-name">Thư viện <strong>sách lập trình</strong></span></a>
+      <p>Tuyển chọn sách công nghệ cho hành trình học tập và sáng tạo của bạn.</p>
+      <span>© 2026 Thư viện sách lập trình</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog class="book-dialog" id="book-dialog" aria-labelledby="dialog-title"></dialog>
+  <script src="cart.js"></script>
+  <script src="store.js"></script>
+</body>
+</html>
