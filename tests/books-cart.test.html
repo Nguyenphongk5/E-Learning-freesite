@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit test giỏ hàng sách</title>
+  <style>
+    body { max-width: 860px; margin: 32px auto; padding: 0 18px; color: #23332f; font: 15px/1.5 "Segoe UI", sans-serif; }
+    h1 { font-size: 25px; }
+    #summary { margin: 18px 0; padding: 12px 14px; background: #edf2eb; font-weight: 700; }
+    #summary[data-state="failed"] { color: #9c2f24; background: #f9e8e4; }
+    #results { padding-left: 24px; }
+    #results li { margin: 7px 0; }
+    .pass { color: #24633b; }
+    .fail { color: #a52e24; }
+    a { color: #174a43; }
+  </style>
+  <script>
+    (() => {
+      const values = new Map();
+      let shouldFailReads = false;
+      let shouldFailWrites = false;
+      const isolatedStorage = {
+        getItem(key) {
+          if (shouldFailReads) throw new Error("Giả lập lỗi đọc storage");
+          return values.has(key) ? values.get(key) : null;
+        },
+        setItem(key, value) {
+          if (shouldFailWrites) throw new Error("Giả lập lỗi ghi storage");
+          values.set(String(key), String(value));
+        },
+        removeItem(key) { values.delete(String(key)); },
+        clear() { values.clear(); }
+      };
+      Object.defineProperty(window, "localStorage", { configurable: true, value: isolatedStorage });
+      window.setStorageFailure = (operation, enabled) => {
+        if (operation === "read") shouldFailReads = enabled;
+        if (operation === "write") shouldFailWrites = enabled;
+      };
+    })();
+  </script>
+  <script src="../books/cart.js" defer></script>
+  <script src="books-cart.test.js" defer></script>
+</head>
+<body>
+  <h1>Unit test: giỏ hàng sách</h1>
+  <p>Các ca kiểm thử gọi trực tiếp API <code>BookCart</code> với localStorage giả lập; không đọc hoặc ghi dữ liệu trình duyệt thật.</p>
+  <div id="summary" role="status" aria-live="polite">Đang chạy kiểm thử…</div>
+  <ol id="results"></ol>
+  <p><a href="../books/index.html">Quay lại thư viện sách</a></p>
+</body>
+</html>
