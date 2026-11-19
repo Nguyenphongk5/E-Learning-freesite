@@ -159,12 +159,9 @@ class CsrfProtectionTests(unittest.TestCase):
     def test_public_quiz_submission_requires_valid_csrf_token(self):
         token, _ = self.get_csrf_token()
         attempt = {
-            "examId": "python-basics",
-            "title": "Python cơ bản",
-            "subject": "Python",
-            "correct": 4,
-            "total": 5,
+            "examId": "javascript-basics",
             "duration": 120,
+            "answers": [1, 2, 1, 2, 2, 1],
         }
         self.assertEqual(
             self.client.post("/api/quiz/attempts", json=attempt).status_code,

@@ -116,48 +116,26 @@ class ValidationEdgeCaseTests(unittest.TestCase):
                 self.assertEqual(self.books_snapshot(), original_books)
 
     def test_quiz_attempts_accept_numeric_boundaries_and_reject_invalid_state_without_writes(self):
-        boundary_attempts = (
-            {
-                "examId": "x",
-                "title": "x",
-                "subject": "x",
-                "correct": 0,
-                "total": 1,
-                "duration": 0,
-            },
-            {
-                "examId": "x" * 100,
-                "title": "t" * 100,
-                "subject": "s" * 60,
-                "correct": 200,
-                "total": 200,
-                "duration": 18000,
-            },
+        valid_attempt = {
+            "examId": "javascript-basics",
+            "duration": 18000,
+            "answers": [1, 2, 1, 2, 2, 1],
+        }
+        self.assertEqual(
+            self.client.post("/api/quiz/attempts", json=valid_attempt).status_code,
+            201,
         )
-        for attempt in boundary_attempts:
-            with self.subTest(attempt=attempt):
-                self.assertEqual(
-                    self.client.post("/api/quiz/attempts", json=attempt).status_code,
-                    201,
-                )
 
         invalid_attempts = (
             {},
-            {"examId": "", "title": "Quiz", "subject": "Python", "correct": 0, "total": 1, "duration": 0},
-            {"examId": "x" * 101, "title": "Quiz", "subject": "Python", "correct": 0, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "", "subject": "Python", "correct": 0, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "t" * 101, "subject": "Python", "correct": 0, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "", "correct": 0, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "s" * 61, "correct": 0, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 0, "total": 0, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 0, "total": 201, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": -1, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 2, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 0, "total": 1, "duration": -1},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 0, "total": 1, "duration": 18001},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": True, "total": 1, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 0, "total": True, "duration": 0},
-            {"examId": "quiz", "title": "Quiz", "subject": "Python", "correct": 0, "total": 1, "duration": False},
+            {"examId": "", "duration": 0, "answers": []},
+            {"examId": "x" * 101, "duration": 0, "answers": []},
+            {"examId": "javascript-basics", "duration": -1, "answers": [1, 2, 1, 2, 2, 1]},
+            {"examId": "javascript-basics", "duration": 18001, "answers": [1, 2, 1, 2, 2, 1]},
+            {"examId": "javascript-basics", "duration": True, "answers": [1, 2, 1, 2, 2, 1]},
+            {"examId": "javascript-basics", "duration": 120, "answers": [1, 2]},
+            {"examId": "javascript-basics", "duration": 120, "answers": [1, 2, 1, 2, 2, True]},
+            {"examId": "javascript-basics", "duration": 120, "answers": [1, 2, 1, 2, 2, 6]},
         )
         with self.app.app_context():
             from models import get_database
@@ -183,14 +161,11 @@ class ValidationEdgeCaseTests(unittest.TestCase):
     def test_quiz_attempts_reject_non_integer_numeric_values_without_writes(self):
         invalid_attempts = []
         valid_attempt = {
-            "examId": "python-basics",
-            "title": "Python cơ bản",
-            "subject": "Python",
-            "correct": 1,
-            "total": 5,
+            "examId": "javascript-basics",
             "duration": 120,
+            "answers": [1, 2, 1, 2, 2, 1],
         }
-        for field in ("correct", "total", "duration"):
+        for field in ("duration",):
             for value in ("1", 1.0, None):
                 invalid_attempts.append({**valid_attempt, field: value})
 

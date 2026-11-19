@@ -1,5 +1,7 @@
 import re
+import random
 import sqlite3
+import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -90,6 +92,56 @@ def seed_books(connection):
     )
 
 
+def seed_quiz_data(connection):
+    if connection.execute("SELECT COUNT(*) FROM quiz_exams").fetchone()[0]:
+        return
+    exams = [
+        ("html-foundations", "Nền tảng HTML & CSS", "HTML & CSS", "Cơ bản", 12, "Cấu trúc trang, semantic HTML và các nguyên tắc CSS."),
+        ("javascript-basics", "JavaScript căn bản", "JavaScript", "Cơ bản", 15, "Biến, kiểu dữ liệu, hàm và các thao tác với mảng."),
+        ("programming-logic", "Tư duy lập trình", "Lập trình", "Trung bình", 15, "Thuật toán, vòng lặp, độ phức tạp và tư duy giải quyết vấn đề."),
+    ]
+    connection.executemany(
+        "INSERT OR IGNORE INTO quiz_exams "
+        "(id, title, subject, difficulty, duration, description) VALUES (?, ?, ?, ?, ?, ?)",
+        exams,
+    )
+    questions = {
+        "html-foundations": [
+            ("Thẻ HTML nào biểu thị nội dung độc lập, có thể tái sử dụng như một bài viết?", ["<section>", "<article>", "<aside>", "<span>"], 1, "<article> dùng cho nội dung độc lập."),
+            ("Thuộc tính CSS nào điều khiển khoảng trống bên trong đường viền?", ["margin", "gap", "padding", "spacing"], 2, "padding là khoảng đệm bên trong."),
+            ("Selector nào chọn phần tử có id là \"menu\"?", [".menu", "#menu", "menu#", "*menu"], 1, "Selector id bắt đầu bằng ký tự #."),
+            ("Thuộc tính nào giúp ảnh giữ tỷ lệ khi vừa khung chứa?", ["object-fit: cover", "display: inline", "position: fixed", "float: left"], 0, "object-fit: cover giữ tỷ lệ ảnh."),
+            ("Vai trò chính của thuộc tính alt trên ảnh là gì?", ["Tạo viền", "Đặt kích thước", "Cung cấp mô tả thay thế", "Tải ảnh nhanh hơn"], 2, "alt cung cấp mô tả thay thế."),
+        ],
+        "javascript-basics": [
+            ("Từ khóa nào khai báo biến có phạm vi khối và có thể gán lại?", ["var", "let", "const", "static"], 1, "let có phạm vi khối."),
+            ("Kết quả của typeof null trong JavaScript là gì?", ['"null"', '"undefined"', '"object"', '"boolean"'], 2, "typeof null trả về \"object\"."),
+            ("Phương thức nào tạo mảng mới bằng cách biến đổi từng phần tử?", ["filter()", "map()", "find()", "reduceRight()"], 1, "map() biến đổi từng phần tử."),
+            ("Toán tử === kiểm tra điều gì?", ["Chỉ giá trị", "Chỉ kiểu", "Giá trị và kiểu", "Giá trị sau ép kiểu"], 2, "=== so sánh cả giá trị và kiểu."),
+            ("Sự kiện nào phản hồi thao tác nhấn nút?", ["submit", "change", "click", "load"], 2, "Sự kiện click phát khi nhấn."),
+            ("Promise.resolve(5) tạo ra trạng thái nào?", ["pending", "fulfilled", "rejected", "cancelled"], 1, "Promise.resolve tạo Promise fulfilled."),
+        ],
+        "programming-logic": [
+            ("Cấu trúc nào lặp khi điều kiện còn đúng?", ["if/else", "while", "switch", "return"], 1, "while lặp khi điều kiện đúng."),
+            ("Độ phức tạp tìm kiếm tuyến tính trên n phần tử là gì?", ["O(1)", "O(log n)", "O(n)", "O(n²)"], 2, "Tìm kiếm tuyến tính là O(n)."),
+            ("Tìm kiếm nhị phân yêu cầu mảng ở trạng thái nào?", ["Số phần tử chẵn", "Đã được sắp xếp", "Không có số âm", "Không trùng giá trị"], 1, "Mảng phải được sắp xếp."),
+            ("Biến đếm thường dùng để làm gì?", ["Đếm lặp hoặc phần tử", "Sắp xếp dữ liệu", "Lưu toàn bộ chương trình", "Dừng mọi hàm"], 0, "Biến đếm theo dõi số lần lặp."),
+            ("Bước đầu tiên khi giải bài toán lập trình là gì?", ["Viết mã", "Hiểu đầu vào và yêu cầu", "Chọn ngôn ngữ phức tạp", "Tối ưu trước"], 1, "Xác định yêu cầu trước."),
+        ],
+    }
+    for exam_id, exam_questions in questions.items():
+        for position, (text, options, answer_index, explanation) in enumerate(exam_questions):
+            connection.execute(
+                "INSERT INTO quiz_questions "
+                "(exam_id, text, options_json, answer_index, explanation, position) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (exam_id, text, json.dumps(options, ensure_ascii=False), answer_index, explanation, position),
+            )
+    connection.execute(
+        "UPDATE quiz_exams SET status = 'published', published_at = COALESCE(published_at, CURRENT_TIMESTAMP)"
+    )
+
+
 def get_database():
     if "database" not in g:
         connection = sqlite3.connect(current_app.config["DATABASE"])
@@ -160,6 +212,55 @@ def initialize_database(app):
             duration_seconds INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS quiz_exams (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            difficulty TEXT NOT NULL DEFAULT 'Cơ bản',
+            duration INTEGER NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+            due_at TEXT,
+            published_at TEXT,
+            shuffle_questions INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS quiz_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            exam_id TEXT NOT NULL REFERENCES quiz_exams(id) ON DELETE CASCADE,
+            text TEXT NOT NULL,
+            options_json TEXT NOT NULL,
+            answer_index INTEGER NOT NULL,
+            explanation TEXT NOT NULL DEFAULT '',
+            question_type TEXT NOT NULL DEFAULT 'single_choice',
+            correct_answers_json TEXT NOT NULL DEFAULT '[]',
+            answer_key TEXT NOT NULL DEFAULT '',
+            points INTEGER NOT NULL DEFAULT 1,
+            required_answer INTEGER NOT NULL DEFAULT 1,
+            position INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS quiz_assignments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            exam_id TEXT NOT NULL REFERENCES quiz_exams(id) ON DELETE CASCADE,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            due_at TEXT,
+            UNIQUE(exam_id, student_id)
+        );
+        CREATE TABLE IF NOT EXISTS quiz_submissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            exam_id TEXT NOT NULL REFERENCES quiz_exams(id) ON DELETE CASCADE,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            answers_json TEXT NOT NULL,
+            auto_score INTEGER NOT NULL DEFAULT 0,
+            manual_score INTEGER,
+            score INTEGER,
+            status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'graded')),
+            submitted_at TEXT,
+            graded_at TEXT,
+            teacher_comment TEXT NOT NULL DEFAULT '',
+            UNIQUE(exam_id, student_id)
+        );
         CREATE TABLE IF NOT EXISTS quiz_monthly_aggregates (
             period_month TEXT NOT NULL,
             exam_id TEXT NOT NULL,
@@ -194,12 +295,46 @@ def initialize_database(app):
     book_columns = {row["name"] for row in connection.execute("PRAGMA table_info(books)")}
     if "details" not in book_columns:
         connection.execute("ALTER TABLE books ADD COLUMN details TEXT NOT NULL DEFAULT ''")
+    exam_columns = {row["name"] for row in connection.execute("PRAGMA table_info(quiz_exams)") }
+    if "status" not in exam_columns:
+        connection.execute("ALTER TABLE quiz_exams ADD COLUMN status TEXT NOT NULL DEFAULT 'draft'")
+    if "due_at" not in exam_columns:
+        connection.execute("ALTER TABLE quiz_exams ADD COLUMN due_at TEXT")
+    if "published_at" not in exam_columns:
+        connection.execute("ALTER TABLE quiz_exams ADD COLUMN published_at TEXT")
+    if "shuffle_questions" not in exam_columns:
+        connection.execute("ALTER TABLE quiz_exams ADD COLUMN shuffle_questions INTEGER NOT NULL DEFAULT 0")
+    question_columns = {row["name"] for row in connection.execute("PRAGMA table_info(quiz_questions)") }
+    if "question_type" not in question_columns:
+        connection.execute("ALTER TABLE quiz_questions ADD COLUMN question_type TEXT NOT NULL DEFAULT 'single_choice'")
+    if "correct_answers_json" not in question_columns:
+        connection.execute("ALTER TABLE quiz_questions ADD COLUMN correct_answers_json TEXT NOT NULL DEFAULT '[]'")
+    if "points" not in question_columns:
+        connection.execute("ALTER TABLE quiz_questions ADD COLUMN points INTEGER NOT NULL DEFAULT 1")
+    if "answer_key" not in question_columns:
+        connection.execute("ALTER TABLE quiz_questions ADD COLUMN answer_key TEXT NOT NULL DEFAULT ''")
+    if "required_answer" not in question_columns:
+        connection.execute("ALTER TABLE quiz_questions ADD COLUMN required_answer INTEGER NOT NULL DEFAULT 1")
+    connection.execute(
+        "UPDATE quiz_exams SET status = 'published', "
+        "published_at = COALESCE(published_at, CURRENT_TIMESTAMP) "
+        "WHERE id IN ('html-foundations', 'javascript-basics', 'programming-logic')"
+    )
+    for row in connection.execute(
+        "SELECT id, answer_index, correct_answers_json FROM quiz_questions"
+    ).fetchall():
+        if row["correct_answers_json"] in {"", "[]"}:
+            connection.execute(
+                "UPDATE quiz_questions SET correct_answers_json = ? WHERE id = ?",
+                (json.dumps([row["answer_index"]], ensure_ascii=False), row["id"]),
+            )
     if connection.execute("SELECT COUNT(*) FROM courses").fetchone()[0] == 0:
         connection.executemany(
             "INSERT INTO courses (title, description, image_url, course_url) VALUES (?, ?, ?, ?)",
             DEFAULT_COURSES,
         )
     seed_books(connection)
+    seed_quiz_data(connection)
 
     if admin_email:
         existing = connection.execute(
@@ -214,6 +349,12 @@ def initialize_database(app):
                 ("Quản trị viên", admin_email, generate_password_hash(admin_password)),
             )
             print(f"Admin account initialized: {admin_email}")
+    connection.execute(
+        "INSERT INTO quiz_assignments (exam_id, student_id, due_at) "
+        "SELECT e.id, u.id, e.due_at FROM quiz_exams e "
+        "JOIN users u ON u.role = 'user' WHERE e.status = 'published' "
+        "ON CONFLICT(exam_id, student_id) DO NOTHING"
+    )
     connection.commit()
     connection.close()
 
@@ -295,11 +436,19 @@ def get_user_by_id(user_id):
 
 
 def create_user(name, email, password_hash, role):
-    cursor = get_database().execute(
+    database = get_database()
+    cursor = database.execute(
         "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
         (name, email, password_hash, role),
     )
-    get_database().commit()
+    if role == "user":
+        database.execute(
+            "INSERT INTO quiz_assignments (exam_id, student_id, due_at) "
+            "SELECT id, ?, due_at FROM quiz_exams WHERE status = 'published' "
+            "ON CONFLICT(exam_id, student_id) DO NOTHING",
+            (cursor.lastrowid,),
+        )
+    database.commit()
     return cursor.lastrowid
 
 
@@ -373,6 +522,420 @@ def delete_user_and_archive_attempts(user_id):
     return archived_attempts
 
 
+def _question_dict(row, include_answer=True):
+    question = {
+        "id": row["id"],
+        "text": row["text"],
+        "options": json.loads(row["options_json"]),
+        "explanation": row["explanation"],
+        "position": row["position"],
+        "type": row["question_type"],
+        "points": row["points"],
+        "answer_key": row["answer_key"],
+        "required": bool(row["required_answer"]),
+    }
+    if include_answer:
+        if row["question_type"] in {"multiple_choice"}:
+            question["answers"] = json.loads(row["correct_answers_json"])
+        else:
+            question["answer"] = row["answer_index"]
+    return question
+
+
+def list_quiz_exams(include_questions=False):
+    database = get_database()
+    rows = database.execute(
+        "SELECT id, title, subject, difficulty, duration, description, status, due_at, published_at, shuffle_questions "
+        "FROM quiz_exams ORDER BY created_at DESC"
+    ).fetchall()
+    exams = []
+    for row in rows:
+        exam = dict(row)
+        question_rows = database.execute(
+            "SELECT id, text, options_json, answer_index, explanation, position, "
+            "question_type, correct_answers_json, answer_key, points, required_answer "
+            "FROM quiz_questions WHERE exam_id = ? ORDER BY position, id",
+            (exam["id"],),
+        ).fetchall()
+        exam["questionCount"] = len(question_rows)
+        if include_questions:
+            exam["questions"] = [_question_dict(question) for question in question_rows]
+        else:
+            exam["questions"] = [
+                {
+                    "id": question["id"],
+                    "text": question["text"],
+                    "options": json.loads(question["options_json"]),
+                    "type": question["question_type"],
+                    "points": question["points"],
+                    "required": bool(question["required_answer"]),
+                }
+                for question in question_rows
+            ]
+        exams.append(exam)
+    return exams
+
+
+def get_quiz_exam(exam_id, include_answers=False):
+    database = get_database()
+    row = database.execute(
+        "SELECT id, title, subject, difficulty, duration, description, status, due_at, published_at, shuffle_questions "
+        "FROM quiz_exams WHERE id = ?",
+        (exam_id,),
+    ).fetchone()
+    if not row:
+        return None
+    exam = dict(row)
+    question_rows = database.execute(
+        "SELECT id, text, options_json, answer_index, explanation, position, "
+        "question_type, correct_answers_json, answer_key, points, required_answer "
+        "FROM quiz_questions WHERE exam_id = ? ORDER BY position, id",
+        (exam_id,),
+    ).fetchall()
+    exam["questionCount"] = len(question_rows)
+    exam["questions"] = [
+        _question_dict(question, include_answer=include_answers)
+        if include_answers
+        else {
+            "id": question["id"],
+            "text": question["text"],
+            "options": json.loads(question["options_json"]),
+            "type": question["question_type"],
+            "points": question["points"],
+            "required": bool(question["required_answer"]),
+        }
+        for question in question_rows
+    ]
+    if not include_answers and exam.get("shuffle_questions"):
+        random.shuffle(exam["questions"])
+    return exam
+
+
+def create_quiz_exam(data):
+    database = get_database()
+    cursor = database.execute(
+        "INSERT INTO quiz_exams "
+        "(id, title, subject, difficulty, duration, description, status, due_at, published_at, shuffle_questions) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            data["id"], data["title"], data["subject"],
+            data.get("difficulty", "Cơ bản"), data["duration"], data.get("description", ""),
+            data.get("status", "draft"), data.get("due_at"),
+            data.get("published_at"), 1 if data.get("shuffle_questions") else 0,
+        ),
+    )
+    database.commit()
+    return cursor
+
+
+def update_quiz_exam(exam_id, data):
+    database = get_database()
+    published_at = data.get("published_at")
+    if published_at is None:
+        existing = database.execute(
+            "SELECT published_at FROM quiz_exams WHERE id = ?", (exam_id,)
+        ).fetchone()
+        published_at = existing["published_at"] if existing else None
+    cursor = database.execute(
+        "UPDATE quiz_exams SET title = ?, subject = ?, difficulty = ?, duration = ?, "
+        "description = ?, status = ?, due_at = ?, published_at = ?, shuffle_questions = ? "
+        "WHERE id = ?",
+        (
+            data["title"], data["subject"], data.get("difficulty", "Cơ bản"),
+            data["duration"], data.get("description", ""), data.get("status", "draft"),
+            data.get("due_at"), published_at, 1 if data.get("shuffle_questions") else 0, exam_id,
+        ),
+    )
+    database.commit()
+    return cursor.rowcount > 0
+
+
+def delete_quiz_exam(exam_id):
+    database = get_database()
+    cursor = database.execute("DELETE FROM quiz_exams WHERE id = ?", (exam_id,))
+    database.commit()
+    return cursor.rowcount > 0
+
+
+def create_quiz_question(exam_id, data):
+    database = get_database()
+    position = database.execute(
+        "SELECT COALESCE(MAX(position), -1) + 1 FROM quiz_questions WHERE exam_id = ?",
+        (exam_id,),
+    ).fetchone()[0]
+    cursor = database.execute(
+        "INSERT INTO quiz_questions "
+        "(exam_id, text, options_json, answer_index, explanation, position, "
+        "question_type, correct_answers_json, answer_key, points, required_answer) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            exam_id, data["text"], json.dumps(data["options"], ensure_ascii=False),
+            data.get("answer", -1), data.get("explanation", ""), position,
+            data["type"], json.dumps(data.get("answers", []), ensure_ascii=False),
+            data.get("answer_key", ""), data["points"],
+            1 if data.get("required", True) else 0,
+        ),
+    )
+    database.commit()
+    return cursor.lastrowid
+
+
+def update_quiz_question(question_id, exam_id, data):
+    database = get_database()
+    cursor = database.execute(
+        "UPDATE quiz_questions SET text = ?, options_json = ?, answer_index = ?, explanation = ?, "
+        "question_type = ?, correct_answers_json = ?, answer_key = ?, points = ?, required_answer = ? "
+        "WHERE id = ? AND exam_id = ?",
+        (
+            data["text"], json.dumps(data["options"], ensure_ascii=False),
+            data.get("answer", -1), data.get("explanation", ""),
+            data["type"], json.dumps(data.get("answers", []), ensure_ascii=False),
+            data.get("answer_key", ""), data["points"],
+            1 if data.get("required", True) else 0, question_id, exam_id,
+        ),
+    )
+    database.commit()
+    return cursor.rowcount > 0
+
+
+def delete_quiz_question(question_id, exam_id):
+    database = get_database()
+    cursor = database.execute(
+        "DELETE FROM quiz_questions WHERE id = ? AND exam_id = ?", (question_id, exam_id)
+    )
+    database.commit()
+    return cursor.rowcount > 0
+
+
+def publish_quiz_exam(exam_id, due_at=None, student_ids=None):
+    database = get_database()
+    exam = database.execute(
+        "SELECT id, status FROM quiz_exams WHERE id = ?", (exam_id,)
+    ).fetchone()
+    if not exam:
+        return False
+    question_count = database.execute(
+        "SELECT COUNT(*) AS count FROM quiz_questions WHERE exam_id = ?", (exam_id,)
+    ).fetchone()["count"]
+    if question_count < 1:
+        raise ValueError("Đề thi cần ít nhất một câu hỏi trước khi xuất bản.")
+    database.execute(
+        "UPDATE quiz_exams SET status = 'published', due_at = ?, published_at = "
+        "COALESCE(published_at, CURRENT_TIMESTAMP) WHERE id = ?",
+        (due_at, exam_id),
+    )
+    if student_ids:
+        for student_id in student_ids:
+            database.execute(
+                "INSERT INTO quiz_assignments (exam_id, student_id, due_at) "
+                "VALUES (?, ?, ?) "
+                "ON CONFLICT(exam_id, student_id) DO UPDATE SET due_at = excluded.due_at",
+                (exam_id, student_id, due_at),
+            )
+    else:
+        database.execute(
+            "INSERT INTO quiz_assignments (exam_id, student_id, due_at) "
+            "SELECT ?, id, ? FROM users WHERE role = 'user' "
+            "ON CONFLICT(exam_id, student_id) DO UPDATE SET due_at = excluded.due_at",
+            (exam_id, due_at),
+        )
+    database.commit()
+    return True
+
+
+def list_assigned_quiz_exams(student_id):
+    database = get_database()
+    rows = database.execute(
+        "SELECT e.id, e.title, e.subject, e.difficulty, e.duration, e.description, "
+        "e.status, COALESCE(a.due_at, e.due_at) AS due_at, e.published_at, "
+        "s.status AS submission_status, s.score "
+        "FROM quiz_assignments a "
+        "JOIN quiz_exams e ON e.id = a.exam_id "
+        "LEFT JOIN quiz_submissions s ON s.exam_id = e.id AND s.student_id = a.student_id "
+        "WHERE a.student_id = ? AND e.status = 'published' "
+        "ORDER BY e.published_at DESC",
+        (student_id,),
+    ).fetchall()
+    exams = []
+    for row in rows:
+        exam = dict(row)
+        exam["questionCount"] = database.execute(
+            "SELECT COUNT(*) AS count FROM quiz_questions WHERE exam_id = ?",
+            (exam["id"],),
+        ).fetchone()["count"]
+        exams.append(exam)
+    return exams
+
+
+def _grade_quiz_answers(question_rows, answers, validate_required=True):
+    auto_score = 0
+    correct_count = 0
+    graded_count = 0
+    review = []
+    for question in question_rows:
+        answer = answers.get(str(question["id"]))
+        if validate_required and question["required_answer"] and (
+            answer is None or answer == "" or answer == []
+        ):
+            return None, "Vui lòng trả lời tất cả câu hỏi bắt buộc."
+
+        if question["question_type"] == "single_choice":
+            correct_answers = [question["answer_index"]]
+            is_correct = type(answer) is int and answer == question["answer_index"]
+            graded_count += 1
+        elif question["question_type"] == "multiple_choice":
+            correct_answers = json.loads(question["correct_answers_json"])
+            is_correct = (
+                isinstance(answer, list)
+                and all(type(value) is int for value in answer)
+                and len(answer) == len(set(answer))
+                and set(answer) == set(correct_answers)
+            )
+            graded_count += 1
+        elif question["question_type"] == "true_false":
+            correct_answers = [question["answer_index"]]
+            is_correct = (
+                type(answer) is bool and answer == (question["answer_index"] == 1)
+            ) or (type(answer) is int and answer == question["answer_index"])
+            graded_count += 1
+        elif question["question_type"] == "essay":
+            correct_answers = None
+            is_correct = None
+            if isinstance(answer, str) and question["answer_key"].strip():
+                expected = " ".join(question["answer_key"].strip().lower().split())
+                submitted = " ".join(answer.strip().lower().split())
+                if submitted == expected:
+                    auto_score += question["points"]
+        else:
+            raise ValueError(f"Unsupported quiz question type: {question['question_type']}")
+
+        if is_correct:
+            correct_count += 1
+            if question["question_type"] != "essay":
+                auto_score += question["points"]
+        review.append({
+            "question_id": question["id"],
+            "correct": is_correct,
+            "correct_answers": correct_answers,
+            "explanation": question["explanation"],
+        })
+    return {
+        "auto_score": auto_score,
+        "correct_count": correct_count,
+        "graded_count": graded_count,
+        "review": review,
+    }, None
+
+
+def submit_quiz_submission(exam_id, student_id, answers):
+    database = get_database()
+    assignment = database.execute(
+        "SELECT due_at FROM quiz_assignments WHERE exam_id = ? AND student_id = ?",
+        (exam_id, student_id),
+    ).fetchone()
+    exam = database.execute(
+        "SELECT id, status, due_at FROM quiz_exams WHERE id = ?", (exam_id,)
+    ).fetchone()
+    if not assignment or not exam or exam["status"] != "published":
+        return None, "Bạn không được giao đề thi này."
+    due_at = assignment["due_at"] or exam["due_at"]
+    if due_at:
+        due_row = database.execute("SELECT julianday(?) AS due", (due_at,)).fetchone()
+        now_row = database.execute("SELECT julianday('now') AS now").fetchone()
+        if due_row["due"] is not None and now_row["now"] > due_row["due"]:
+            return None, "Đề thi đã quá hạn nộp."
+
+    existing = database.execute(
+        "SELECT id FROM quiz_submissions "
+        "WHERE exam_id = ? AND student_id = ?",
+        (exam_id, student_id),
+    ).fetchone()
+    question_rows = database.execute(
+        "SELECT id, question_type, answer_index, correct_answers_json, answer_key, "
+        "explanation, points, required_answer "
+        "FROM quiz_questions WHERE exam_id = ? ORDER BY position, id",
+        (exam_id,),
+    ).fetchall()
+    question_ids = {str(question["id"]) for question in question_rows}
+    if not isinstance(answers, dict) or set(answers) != question_ids:
+        return None, "Danh sách câu trả lời không hợp lệ."
+
+    grading, error = _grade_quiz_answers(question_rows, answers)
+    if error:
+        return None, error
+    auto_score = grading["auto_score"]
+
+    if existing:
+        database.execute(
+            "UPDATE quiz_submissions SET answers_json = ?, auto_score = ?, "
+            "manual_score = NULL, score = ?, status = 'submitted', "
+            "submitted_at = CURRENT_TIMESTAMP, graded_at = NULL, teacher_comment = '' "
+            "WHERE exam_id = ? AND student_id = ?",
+            (json.dumps(answers, ensure_ascii=False), auto_score, auto_score,
+             exam_id, student_id),
+        )
+    else:
+        database.execute(
+            "INSERT INTO quiz_submissions "
+            "(exam_id, student_id, answers_json, auto_score, score, status, submitted_at) "
+            "VALUES (?, ?, ?, ?, ?, 'submitted', CURRENT_TIMESTAMP)",
+            (exam_id, student_id, json.dumps(answers, ensure_ascii=False),
+             auto_score, auto_score),
+        )
+    database.commit()
+    total_points = sum(question["points"] for question in question_rows)
+    score = round(auto_score / total_points * 100) if total_points else 0
+    return {
+        "exam_id": exam_id,
+        "auto_score": auto_score,
+        "total_points": total_points,
+        "score": score,
+        "correct_count": grading["correct_count"],
+        "graded_count": grading["graded_count"],
+        "review": grading["review"],
+        "answers": answers,
+        "updated_existing": bool(existing),
+        "status": "submitted",
+    }, None
+
+
+def list_quiz_submissions(exam_id):
+    database = get_database()
+    rows = database.execute(
+        "SELECT s.id, s.exam_id, s.student_id, u.name, u.email, s.answers_json, "
+        "s.auto_score, s.manual_score, s.score, s.status, s.submitted_at, s.graded_at, "
+        "s.teacher_comment FROM quiz_submissions s "
+        "JOIN users u ON u.id = s.student_id WHERE s.exam_id = ? "
+        "ORDER BY s.submitted_at DESC",
+        (exam_id,),
+    ).fetchall()
+    submissions = []
+    for row in rows:
+        item = dict(row)
+        item["answers"] = json.loads(item.pop("answers_json"))
+        submissions.append(item)
+    return submissions
+
+
+def grade_quiz_submission(submission_id, manual_score, comment=""):
+    database = get_database()
+    submission = database.execute(
+        "SELECT id, auto_score FROM quiz_submissions WHERE id = ?", (submission_id,)
+    ).fetchone()
+    if not submission:
+        return False
+    if type(manual_score) is not int or manual_score < 0:
+        return False
+    total_score = submission["auto_score"] + manual_score
+    database.execute(
+        "UPDATE quiz_submissions SET manual_score = ?, score = ?, status = 'graded', "
+        "graded_at = CURRENT_TIMESTAMP, teacher_comment = ? WHERE id = ?",
+        (manual_score, total_score, str(comment).strip(), submission_id),
+    )
+    database.commit()
+    return True
+
+
 def create_quiz_attempt(data, user_id=None):
     score = round(data["correct_count"] / data["total_questions"] * 100)
     cursor = get_database().execute(
@@ -398,7 +961,6 @@ def get_quiz_statistics():
     database = get_database()
     live_summary = database.execute(
         "SELECT COUNT(*) AS attempts, COALESCE(SUM(score), 0) AS score_total, "
-        "COUNT(DISTINCT user_id) AS learners, "
         "COALESCE(SUM(correct_count), 0) AS correct_count, "
         "COALESCE(SUM(total_questions), 0) AS total_questions "
         "FROM quiz_attempts"
@@ -410,14 +972,75 @@ def get_quiz_statistics():
         "COALESCE(SUM(total_questions), 0) AS total_questions "
         "FROM quiz_monthly_aggregates"
     ).fetchone()
-    attempt_count = live_summary["attempts"] + archived_summary["attempts"]
-    score_total = live_summary["score_total"] + archived_summary["score_total"]
+    assigned_rows = database.execute(
+        "SELECT s.id, s.exam_id, s.student_id, u.name AS learner, e.title AS exam_title, "
+        "e.subject, s.answers_json, s.auto_score, s.score, s.status, s.submitted_at "
+        "FROM quiz_submissions s "
+        "JOIN quiz_exams e ON e.id = s.exam_id "
+        "JOIN users u ON u.id = s.student_id "
+        "WHERE s.status IN ('submitted', 'graded') "
+        "ORDER BY s.submitted_at DESC, s.id DESC"
+    ).fetchall()
+    questions_by_exam = {}
+    assigned_attempts = []
+    for row in assigned_rows:
+        exam_id = row["exam_id"]
+        if exam_id not in questions_by_exam:
+            questions_by_exam[exam_id] = database.execute(
+                "SELECT id, question_type, answer_index, correct_answers_json, answer_key, "
+                "explanation, points, required_answer FROM quiz_questions "
+                "WHERE exam_id = ? ORDER BY position, id",
+                (exam_id,),
+            ).fetchall()
+        question_rows = questions_by_exam[exam_id]
+        answers = json.loads(row["answers_json"])
+        grading, _ = _grade_quiz_answers(
+            question_rows, answers, validate_required=False
+        )
+        total_points = sum(question["points"] for question in question_rows)
+        score_points = row["score"] if row["score"] is not None else row["auto_score"]
+        score = round(score_points * 100 / total_points) if total_points else 0
+        assigned_attempts.append({
+            "exam_id": exam_id,
+            "exam_title": row["exam_title"],
+            "subject": row["subject"],
+            "student_id": row["student_id"],
+            "learner": row["learner"],
+            "score": score,
+            "correct_count": grading["correct_count"],
+            "total_questions": grading["graded_count"],
+            "created_at": row["submitted_at"],
+        })
+
+    assigned_count = len(assigned_attempts)
+    attempt_count = (
+        live_summary["attempts"] + archived_summary["attempts"] + assigned_count
+    )
+    score_total = (
+        live_summary["score_total"]
+        + archived_summary["score_total"]
+        + sum(attempt["score"] for attempt in assigned_attempts)
+    )
+    learners = database.execute(
+        "SELECT COUNT(*) FROM ("
+        "SELECT user_id AS student_id FROM quiz_attempts WHERE user_id IS NOT NULL "
+        "UNION "
+        "SELECT student_id FROM quiz_submissions "
+        "WHERE student_id IS NOT NULL AND status IN ('submitted', 'graded')"
+        ")"
+    ).fetchone()[0]
     summary = {
         "attempts": attempt_count,
         "average_score": int(score_total / attempt_count + 0.5) if attempt_count else 0,
-        "learners": live_summary["learners"],
-        "correct_count": live_summary["correct_count"] + archived_summary["correct_count"],
-        "total_questions": live_summary["total_questions"] + archived_summary["total_questions"],
+        "learners": learners,
+        "correct_count": (
+            live_summary["correct_count"] + archived_summary["correct_count"]
+            + sum(attempt["correct_count"] for attempt in assigned_attempts)
+        ),
+        "total_questions": (
+            live_summary["total_questions"] + archived_summary["total_questions"]
+            + sum(attempt["total_questions"] for attempt in assigned_attempts)
+        ),
     }
 
     exam_rows = database.execute(
@@ -443,6 +1066,19 @@ def get_quiz_statistics():
         exam["attempts"] += row["attempts"]
         exam["score_total"] += row["score_total"]
         exam["best_score"] = max(exam["best_score"], row["best_score"])
+    for attempt in assigned_attempts:
+        key = (attempt["exam_id"], attempt["exam_title"], attempt["subject"])
+        exam = exams_by_key.setdefault(key, {
+            "exam_id": attempt["exam_id"],
+            "exam_title": attempt["exam_title"],
+            "subject": attempt["subject"],
+            "attempts": 0,
+            "score_total": 0,
+            "best_score": 0,
+        })
+        exam["attempts"] += 1
+        exam["score_total"] += attempt["score"]
+        exam["best_score"] = max(exam["best_score"], attempt["score"])
     exams = [
         {
             "exam_id": exam["exam_id"],
@@ -455,18 +1091,31 @@ def get_quiz_statistics():
         for exam in exams_by_key.values()
     ]
     exams.sort(key=lambda exam: (-exam["attempts"], exam["exam_title"].casefold()))
-    recent = database.execute(
-        "SELECT quiz_attempts.exam_title, quiz_attempts.subject, "
-        "quiz_attempts.correct_count, quiz_attempts.total_questions, quiz_attempts.score, "
-        "quiz_attempts.created_at, "
-        "CASE WHEN quiz_attempts.user_id IS NULL THEN 'Khách' ELSE 'Học viên' END AS learner "
-        "FROM quiz_attempts "
-        "ORDER BY quiz_attempts.id DESC LIMIT 20"
-    ).fetchall()
+    recent = [
+        dict(attempt)
+        for attempt in database.execute(
+            "SELECT quiz_attempts.exam_title, quiz_attempts.subject, "
+            "quiz_attempts.correct_count, quiz_attempts.total_questions, quiz_attempts.score, "
+            "quiz_attempts.created_at, "
+            "CASE WHEN quiz_attempts.user_id IS NULL THEN 'Khách' ELSE 'Học viên' END AS learner "
+            "FROM quiz_attempts "
+            "ORDER BY quiz_attempts.id DESC LIMIT 20"
+        ).fetchall()
+    ]
+    recent.extend({
+        "exam_title": attempt["exam_title"],
+        "subject": attempt["subject"],
+        "correct_count": attempt["correct_count"],
+        "total_questions": attempt["total_questions"],
+        "score": attempt["score"],
+        "created_at": attempt["created_at"],
+        "learner": attempt["learner"],
+    } for attempt in assigned_attempts)
+    recent.sort(key=lambda attempt: attempt["created_at"] or "", reverse=True)
     return {
         "summary": summary,
         "exams": exams,
-        "recent": [dict(attempt) for attempt in recent],
+        "recent": recent[:20],
     }
 
 

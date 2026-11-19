@@ -110,40 +110,62 @@
     </main>
 
     <div id="examDialog" class="dialog-backdrop is-hidden" aria-hidden="true">
-      <section class="exam-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
-        <div class="dialog-heading">
-          <div><p class="eyebrow">THÔNG TIN ĐỀ</p><h2 id="dialogTitle">Tạo đề thi mới</h2></div>
-          <button id="closeDialogBtn" class="close-button" type="button" aria-label="Đóng">×</button>
-        </div>
-        <form id="examForm">
-          <label class="form-field form-field-wide">
-            <span>Tên đề thi</span>
-            <input id="examTitle" name="title" type="text" maxlength="100" placeholder="Ví dụ: Kiểm tra JavaScript giữa kỳ" required />
-          </label>
-          <label class="form-field form-field-wide">
-            <span>Môn học</span>
-            <input id="examSubject" name="subject" type="text" maxlength="60" placeholder="Ví dụ: JavaScript" list="subjectSuggestions" required />
-            <datalist id="subjectSuggestions"><option value="HTML & CSS"></option><option value="JavaScript"></option><option value="Lập trình"></option></datalist>
-          </label>
-          <div class="form-grid">
-            <label class="form-field">
-              <span>Số câu hỏi</span>
-              <input id="examQuestionCount" name="questionCount" type="number" min="1" max="200" required />
-              <small id="questionCountHint" class="field-hint"></small>
-            </label>
-            <label class="form-field">
-              <span>Thời gian (phút)</span>
-              <input id="examDuration" name="duration" type="number" min="1" max="300" required />
-            </label>
-          </div>
-          <div class="dialog-actions">
-            <button id="cancelDialogBtn" class="secondary-button" type="button">Hủy</button>
-            <button class="primary-button" type="submit">Lưu đề thi</button>
-          </div>
+      <section class="exam-dialog quiz-editor" role="dialog" aria-modal="true" aria-label="Trình chỉnh sửa đề thi">
+        <form id="examForm" class="quiz-editor-form">
+          <header class="quiz-editor-topbar">
+            <button id="closeDialogBtn" class="quiz-editor-back" type="button" aria-label="Quay lại danh sách đề">←</button>
+            <div class="quiz-editor-title">
+              <input id="examTitle" name="title" type="text" maxlength="100" placeholder="Tên đề thi" aria-label="Tên đề thi" required />
+              <span id="saveState" role="status">Bản nháp</span>
+            </div>
+            <div class="quiz-editor-actions">
+              <label class="quiz-duration"><span>Thời lượng</span><span class="quiz-duration-input"><input id="examDuration" name="duration" type="number" min="1" max="300" value="15" required /><span>phút</span></span></label>
+              <button id="previewExamBtn" class="quiz-tool-button" type="button">Xem trước</button>
+              <button class="quiz-tool-button" type="button" data-editor-jump="examSettings">Cài đặt đề</button>
+              <button class="quiz-tool-button" type="button" data-editor-jump="examResponses">Bài nộp</button>
+              <button id="saveExamBtn" class="secondary-button" type="button">Lưu nháp</button>
+              <button id="publishExamBtn" class="quiz-publish-button" type="button">Xuất bản</button>
+            </div>
+          </header>
+
+          <main class="quiz-editor-workspace">
+            <div id="builderQuestions" class="builder-questions"></div>
+            <button id="addBuilderQuestion" class="quiz-add-question" type="button"><span aria-hidden="true">＋</span> Thêm câu hỏi</button>
+
+            <section class="quiz-details-card" id="examSettings" aria-labelledby="quizDetailsHeading">
+              <div class="quiz-details-heading">
+                <div>
+                  <p class="quiz-kicker">THÔNG TIN ĐỀ THI</p>
+                  <h2 id="quizDetailsHeading">Thiết lập bài kiểm tra</h2>
+                </div>
+              </div>
+              <div class="quiz-details-grid">
+                <label class="quiz-field"><span>Môn học</span><input id="examSubject" name="subject" type="text" maxlength="60" placeholder="Ví dụ: Toán học" list="subjectSuggestions" required /></label>
+                <datalist id="subjectSuggestions"><option value="HTML & CSS"></option><option value="JavaScript"></option><option value="Lập trình"></option></datalist>
+                <label class="quiz-field"><span>Mô tả đề thi</span><input id="examDescription" type="text" maxlength="240" placeholder="Thêm hướng dẫn hoặc mô tả ngắn" /></label>
+                <label class="quiz-field"><span>Hạn nộp</span><input id="examDueAt" name="due_at" type="datetime-local" /></label>
+              </div>
+              <div class="quiz-settings-row">
+                <label><input id="examShuffle" name="shuffle_questions" type="checkbox" /><span><strong>Xáo trộn thứ tự câu hỏi</strong><small>Thứ tự câu hỏi khác nhau cho mỗi lượt làm bài.</small></span></label>
+                <label class="quiz-status-field"><span>Trạng thái</span><select id="examStatus" name="status"><option value="draft">Bản nháp</option><option value="published">Đã xuất bản</option></select></label>
+              </div>
+            </section>
+
+            <section class="quiz-responses-section" id="examResponses" aria-labelledby="responsesHeading">
+              <div class="quiz-responses-heading">
+                <div>
+                  <p class="quiz-kicker">THEO DÕI KẾT QUẢ</p>
+                  <h2 id="responsesHeading">Bài làm đã nộp</h2>
+                </div>
+                <span id="responseSummary">Lưu đề thi để xem bài nộp.</span>
+              </div>
+              <div id="submissionList" class="submission-list"></div>
+            </section>
+          </main>
         </form>
       </section>
     </div>
 
-    <footer class="admin-footer"><a href="./index.html">E-Learning Eduhub</a><span>Dữ liệu đề thi được lưu trên trình duyệt này.</span></footer>
+    <footer class="admin-footer"><a href="./index.html">E-Learning Eduhub</a><span>Dữ liệu đề thi được lưu trên máy chủ.</span></footer>
   </body>
 </html>

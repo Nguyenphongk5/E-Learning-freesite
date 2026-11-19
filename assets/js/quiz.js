@@ -23,30 +23,18 @@ const questionBank = [
   ] },
 ];
 
-function loadExamCatalog() {
-  let catalog;
-  try {
-    catalog = JSON.parse(localStorage.getItem('eduhubExamCatalog'));
-  } catch {
-    catalog = null;
-  }
-  if (!Array.isArray(catalog)) return questionBank;
-
-  return catalog.map((metadata) => {
-    const bankExam = questionBank.find((exam) => exam.id === metadata.id);
-    if (!bankExam) return { ...metadata, questions: [], isDraft: true };
-    return {
-      ...bankExam,
-      title: metadata.title,
-      subject: metadata.subject,
-      duration: Number(metadata.duration),
-      questionCount: bankExam.questions.length,
-      isDraft: false,
-    };
-  });
+async function loadExamCatalog() {
+  const response = await fetch('/api/quiz/exams', { credentials: 'same-origin' });
+  const catalog = await response.json();
+  if (!response.ok) throw new Error(catalog.error || 'Không thể tải danh sách đề thi.');
+  return catalog.map((exam) => ({
+    ...exam,
+    questionCount: exam.questionCount || 0,
+    isDraft: (exam.questionCount || 0) === 0,
+  }));
 }
 
-const exams = loadExamCatalog();
+let exams = [];
 
 const historyKey = 'eduhubExamHistory';
 const $ = (selector) => document.querySelector(selector);
@@ -60,6 +48,8 @@ let timerId = null;
 let secondsLeft = 0;
 let startedAt = 0;
 let resultData = null;
+let submitting = false;
+let activeAttemptId = null;
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -68,7 +58,7 @@ function escapeHtml(value) {
 function readHistory() {
   try {
     const data = JSON.parse(localStorage.getItem(historyKey));
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data.slice(0, 3) : [];
   } catch {
     return [];
   }
@@ -110,13 +100,25 @@ function startTimer() {
   }, 1000);
 }
 
-function beginExam(exam) {
+async function beginExam(exam) {
+  try {
+    const response = await fetch(`/api/quiz/exams/${encodeURIComponent(exam.id)}`, { credentials: 'same-origin' });
+    const detail = await response.json();
+    if (!response.ok) throw new Error(detail.error || 'Không thể tải đề thi.');
+    exam = { ...exam, ...detail, questions: detail.questions };
+  } catch (error) {
+    alert(error.message);
+    return;
+  }
   activeExam = exam;
   answers = Array(exam.questions.length).fill(null);
   questionIndex = 0;
   secondsLeft = exam.duration * 60;
   startedAt = Date.now();
   resultData = null;
+  activeAttemptId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  $('#submitError').classList.add('is-hidden');
+  $('#submitError').textContent = '';
   $('#sessionSubject').textContent = exam.subject.toUpperCase();
   $('#sessionTitle').textContent = exam.title;
   renderQuestion();
@@ -136,59 +138,130 @@ function renderQuestion() {
   $('.progress-track').setAttribute('aria-valuenow', String(percent));
   $('#progressBar').style.width = `${percent}%`;
   $('#questionText').textContent = question.text;
-  $('#answerOptions').innerHTML = `<legend class="sr-only">Chọn đáp án của bạn</legend>${question.options.map((option, index) => `<label class="answer-option"><input type="radio" name="answer" value="${index}" ${answers[questionIndex] === index ? 'checked' : ''}><span class="answer-letter">${String.fromCharCode(65 + index)}</span><span class="answer-copy">${escapeHtml(option)}</span></label>`).join('')}`;
-  $('#questionNavigator').innerHTML = activeExam.questions.map((_, index) => `<button class="question-jump ${index === questionIndex ? 'is-current' : ''} ${answers[index] !== null ? 'is-answered' : ''}" type="button" data-question-index="${index}" aria-label="Đi đến câu ${index + 1}" aria-current="${index === questionIndex ? 'step' : 'false'}">${index + 1}</button>`).join('');
+  if (question.type === 'essay') {
+    $('#answerOptions').innerHTML = `<legend class="sr-only">Viết câu trả lời của bạn</legend><textarea id="essayAnswer" class="builder-answer-text" rows="8" placeholder="Nhập câu trả lời tự luận...">${escapeHtml(typeof answers[questionIndex] === 'string' ? answers[questionIndex] : '')}</textarea>`;
+  } else if (question.type === 'multiple_choice') {
+    const selected = Array.isArray(answers[questionIndex]) ? answers[questionIndex] : [];
+    $('#answerOptions').innerHTML = `<legend class="sr-only">Chọn một hoặc nhiều đáp án</legend>${question.options.map((option, index) => `<label class="answer-option"><input type="checkbox" name="answer-multiple" value="${index}" ${selected.includes(index) ? 'checked' : ''}><span class="answer-letter">${String.fromCharCode(65 + index)}</span><span class="answer-copy">${escapeHtml(option)}</span></label>`).join('')}`;
+  } else {
+    $('#answerOptions').innerHTML = `<legend class="sr-only">Chọn đáp án của bạn</legend>${question.options.map((option, index) => `<label class="answer-option"><input type="radio" name="answer" value="${index}" ${answers[questionIndex] === index ? 'checked' : ''}><span class="answer-letter">${String.fromCharCode(65 + index)}</span><span class="answer-copy">${escapeHtml(option)}</span></label>`).join('')}`;
+  }
+  $('#questionNavigator').innerHTML = activeExam.questions.map((_, index) => {
+    const answered = answers[index] !== null;
+    const current = index === questionIndex;
+    return `<button class="question-jump ${current ? 'is-current' : ''} ${answered ? 'is-answered' : ''}" type="button" data-question-index="${index}" aria-label="Câu ${index + 1}, ${answered ? 'đã trả lời' : 'chưa trả lời'}${current ? ', đang xem' : ''}" aria-current="${current ? 'step' : 'false'}">${index + 1}</button>`;
+  }).join('');
   $('#previousQuestionBtn').disabled = questionIndex === 0;
   $('#nextQuestionBtn').disabled = questionIndex === activeExam.questions.length - 1;
 }
 
 async function submitExam(timedOut = false) {
-  if (!activeExam || resultData) return;
+  if (!activeExam || resultData || submitting) return;
   const unanswered = answers.filter((answer) => answer === null).length;
   if (!timedOut && unanswered && !confirm(`Bạn còn ${unanswered} câu chưa trả lời. Vẫn nộp bài?`)) return;
   if (!timedOut && !unanswered && !confirm('Nộp bài thi ngay bây giờ?')) return;
   clearInterval(timerId);
-  const correct = activeExam.questions.reduce((count, question, index) => count + (answers[index] === question.answer ? 1 : 0), 0);
   const duration = Math.min(activeExam.duration * 60, Math.floor((Date.now() - startedAt) / 1000));
-  const result = { examId: activeExam.id, title: activeExam.title, subject: activeExam.subject, correct, total: activeExam.questions.length, score: Math.round(correct / activeExam.questions.length * 100), duration, date: new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date()) };
-  resultData = result;
+  submitting = true;
+  $('#submitExamBtn').disabled = true;
+  $('#submitError').classList.add('is-hidden');
   try {
-    localStorage.setItem(historyKey, JSON.stringify([result, ...readHistory()].slice(0, 20)));
-  } catch {
-    alert('Không thể lưu lịch sử trên trình duyệt này. Kết quả hiện tại vẫn được giữ.');
-  }
-  renderResult(result, timedOut);
-  renderHistory();
-  renderAnalytics();
-  showView('result');
-  try {
-    const response = await fetch('/api/quiz/attempts', {
+    const answersPayload = Object.fromEntries(
+      activeExam.questions.map((question, index) => [String(question.id), answers[index]])
+    );
+    const response = await fetch(`/api/quiz/exams/${encodeURIComponent(activeExam.id)}/submit`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '',
       },
-      body: JSON.stringify(result),
+      body: JSON.stringify({
+        answers: answersPayload,
+      }),
     });
-    if (!response.ok) throw new Error('Không thể đồng bộ kết quả.');
-  } catch {
-    $('#resultMessage').textContent += ' Kết quả chỉ được lưu trên trình duyệt này.';
+    const saved = await response.json();
+    if (!response.ok) throw new Error(saved.error || 'Không thể đồng bộ kết quả.');
+    if (
+      typeof saved.score !== 'number' ||
+      !Number.isInteger(saved.correct_count) ||
+      !Number.isInteger(saved.graded_count) ||
+      !Array.isArray(saved.review) ||
+      saved.review.length !== activeExam.questions.length ||
+      !saved.answers ||
+      typeof saved.answers !== 'object' ||
+      Array.isArray(saved.answers)
+    ) {
+      throw new Error('Máy chủ trả về kết quả chấm bài không hợp lệ.');
+    }
+    answers = activeExam.questions.map((question) => (
+      Object.prototype.hasOwnProperty.call(saved.answers, String(question.id))
+        ? saved.answers[String(question.id)]
+        : null
+    ));
+    const result = {
+      examId: activeExam.id,
+      attemptId: activeAttemptId,
+      title: activeExam.title,
+      subject: activeExam.subject,
+      correct: saved.correct_count,
+      total: saved.graded_count,
+      score: saved.score,
+      duration,
+      date: new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date()),
+    };
+    resultData = result;
+    try {
+      const history = readHistory().filter((item) => item.attemptId !== result.attemptId);
+      localStorage.setItem(historyKey, JSON.stringify([result, ...history].slice(0, 3)));
+    } catch {
+      alert('Không thể lưu lịch sử trên trình duyệt này. Kết quả đã được máy chủ ghi nhận.');
+    }
+    renderResult(result, timedOut, saved.review, saved.updated_existing);
+    renderHistory();
+    renderAnalytics();
+    showView('result');
+  } catch (error) {
+    $('#submitError').textContent = `Không thể nộp bài: ${error.message} Câu trả lời vẫn được giữ trên trang; hãy khắc phục lỗi rồi thử nộp lại.`;
+    $('#submitError').classList.remove('is-hidden');
+    if (!timedOut && secondsLeft > 0) startTimer();
+  } finally {
+    submitting = false;
+    $('#submitExamBtn').disabled = false;
   }
 }
 
-function renderResult(result, timedOut) {
+function renderResult(result, timedOut, review, updatedExisting = false) {
   $('#scorePercent').textContent = `${result.score}%`;
   $('#resultSubject').textContent = result.subject.toUpperCase();
   $('#resultHeading').textContent = timedOut ? 'Hết giờ làm bài' : 'Bài làm đã hoàn thành';
-  $('#resultMessage').textContent = result.score >= 80 ? 'Làm tốt lắm. Bạn đã nắm khá vững các kiến thức trong bộ đề này.' : 'Hãy xem lại phần giải thích dưới đây và thử sức thêm một lần nữa.';
+  $('#resultMessage').textContent = updatedExisting
+    ? 'Kết quả lần làm này đã được lưu và cập nhật bài nộp mới nhất.'
+    : (result.score >= 80
+      ? 'Làm tốt lắm. Bạn đã nắm khá vững các kiến thức trong bộ đề này.'
+      : 'Hãy xem lại phần giải thích dưới đây và thử sức thêm một lần nữa.');
   $('#correctCount').textContent = result.correct;
   $('#incorrectCount').textContent = result.total - result.correct;
   $('#resultDuration').textContent = formatTime(result.duration);
+  const reviewByQuestionId = new Map(review.map((item) => [String(item.question_id), item]));
   $('#answerReview').innerHTML = activeExam.questions.map((question, index) => {
-    const correct = answers[index] === question.answer;
-    const selected = answers[index] === null ? 'Chưa chọn đáp án' : question.options[answers[index]];
-    return `<article class="review-item ${correct ? 'is-correct' : 'is-wrong'}"><div class="review-result-line"><span>${correct ? '✓ Trả lời đúng' : '× Cần xem lại'}</span><strong>Câu ${index + 1}</strong></div><h3>${escapeHtml(question.text)}</h3><p class="review-answer">Bạn chọn: <strong>${escapeHtml(selected)}</strong></p><p class="review-answer">Đáp án đúng: <strong>${escapeHtml(question.options[question.answer])}</strong></p><p class="review-explanation">${escapeHtml(question.explanation)}</p></article>`;
+    const questionReview = reviewByQuestionId.get(String(question.id));
+    const correct = questionReview.correct;
+    const correctAnswers = questionReview.correct_answers;
+    const selected = answers[index] === null || answers[index] === undefined
+      ? 'Chưa chọn đáp án'
+      : (question.type === 'essay'
+        ? answers[index]
+        : (Array.isArray(answers[index])
+          ? answers[index].map((answer) => question.options[answer]).join(', ')
+          : question.options[answers[index]]));
+    const resultLine = question.type === 'essay'
+      ? 'Chờ giáo viên chấm'
+      : (correct ? '✓ Trả lời đúng' : '× Cần xem lại');
+    const answerText = question.type === 'essay'
+      ? 'Đáp án tự luận được ẩn; điểm sẽ được cập nhật sau khi giáo viên chấm.'
+      : `Đáp án đúng: <strong>${escapeHtml(correctAnswers.map((answer) => question.options[answer]).join(', '))}</strong>`;
+    return `<article class="review-item ${correct === null ? '' : (correct ? 'is-correct' : 'is-wrong')}"><div class="review-result-line"><span>${resultLine}</span><strong>Câu ${index + 1}</strong></div><h3>${escapeHtml(question.text)}</h3><p class="review-answer">Bạn chọn: <strong>${escapeHtml(selected)}</strong></p><p class="review-answer">${answerText}</p><p class="review-explanation">${escapeHtml(questionReview.explanation || '')}</p></article>`;
   }).join('');
 }
 
@@ -277,6 +350,18 @@ $('#answerOptions').addEventListener('change', (event) => {
   if (event.target.matches('input[name="answer"]')) {
     answers[questionIndex] = Number(event.target.value);
     renderQuestion();
+  } else if (event.target.matches('input[name="answer-multiple"]')) {
+    const selected = Array.isArray(answers[questionIndex]) ? [...answers[questionIndex]] : [];
+    const value = Number(event.target.value);
+    if (event.target.checked && !selected.includes(value)) selected.push(value);
+    if (!event.target.checked) selected.splice(selected.indexOf(value), 1);
+    answers[questionIndex] = selected.length ? selected : null;
+    renderQuestion();
+  }
+});
+$('#answerOptions').addEventListener('input', (event) => {
+  if (event.target.matches('#essayAnswer')) {
+    answers[questionIndex] = event.target.value.trim() ? event.target.value : null;
   }
 });
 
@@ -297,6 +382,15 @@ $('#retryExamBtn').addEventListener('click', () => {
   if (exam) beginExam(exam);
 });
 
-renderExams();
-renderHistory();
-renderAnalytics();
+async function initializeQuiz() {
+  try {
+    exams = await loadExamCatalog();
+  } catch (error) {
+    $('#examList').innerHTML = `<p class="analytics-empty">${escapeHtml(error.message)}</p>`;
+  }
+  renderExams();
+  renderHistory();
+  renderAnalytics();
+}
+
+initializeQuiz();

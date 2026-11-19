@@ -232,15 +232,191 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertEqual(created.json["role"], "admin")
         self.assertNotIn("password_hash", created.json)
 
+    def test_quiz_exam_question_crud_and_server_side_grading(self):
+        self.assertEqual(self.client.post("/api/admin/quiz/exams", json={
+            "title": "Đề kiểm tra",
+            "subject": "Python",
+            "difficulty": "Cơ bản",
+            "duration": 10,
+            "description": "Kiểm tra CRUD",
+        }).status_code, 401)
+        self.login_admin()
+        created = self.client.post("/api/admin/quiz/exams", json={
+            "title": "Đề kiểm tra",
+            "subject": "Python",
+            "difficulty": "Cơ bản",
+            "duration": 10,
+            "description": "Kiểm tra CRUD",
+        })
+        self.assertEqual(created.status_code, 201)
+        exam_id = created.json["id"]
+
+        added = self.client.post(f"/api/admin/quiz/exams/{exam_id}/questions", json={
+            "text": "Python là ngôn ngữ gì?",
+            "options": ["Biên dịch", "Thông dịch", "Phần cứng", "Cơ sở dữ liệu"],
+            "answer": 1,
+            "explanation": "Python là ngôn ngữ thông dịch.",
+        })
+        self.assertEqual(added.status_code, 201)
+        self.assertEqual(
+            self.client.post(f"/api/admin/quiz/exams/{exam_id}/publish", json={
+                "due_at": None,
+                "student_ids": None,
+            }).status_code,
+            200,
+        )
+
+        public_exam = self.client.get(f"/api/quiz/exams/{exam_id}")
+        self.assertEqual(public_exam.status_code, 200)
+        self.assertNotIn("answer", public_exam.json["questions"][0])
+
+        submitted = self.client.post("/api/quiz/attempts", json={
+            "examId": exam_id,
+            "duration": 60,
+            "answers": [1],
+        })
+        self.assertEqual(submitted.status_code, 201)
+        self.assertEqual(submitted.json["message"], "Đã lưu kết quả bài thi.")
+
+        updated = self.client.put(f"/api/admin/quiz/exams/{exam_id}", json={
+            "title": "Đề kiểm tra đã sửa",
+            "subject": "Python",
+            "difficulty": "Trung bình",
+            "duration": 15,
+            "description": "Đã cập nhật",
+        })
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json["title"], "Đề kiểm tra đã sửa")
+        question_id = public_exam.json["questions"][0]["id"]
+        self.assertEqual(self.client.put(
+            f"/api/admin/quiz/exams/{exam_id}/questions/{question_id}",
+            json={
+                "text": "Python là ngôn ngữ thông dịch phải không?",
+                "options": ["Không", "Có"],
+                "answer": 1,
+                "explanation": "Đúng.",
+            },
+        ).status_code, 200)
+        self.assertEqual(self.client.delete(
+            f"/api/admin/quiz/exams/{exam_id}/questions/{question_id}"
+        ).status_code, 200)
+        self.assertEqual(self.client.delete(f"/api/admin/quiz/exams/{exam_id}").status_code, 200)
+
+    def test_assigned_exam_submission_survives_exam_edit_and_appears_in_admin_stats(self):
+        self.login_admin()
+        created = self.client.post("/api/admin/quiz/exams", json={
+            "title": "Câu trả lời đúng",
+            "subject": "Toán",
+            "duration": 10,
+        })
+        self.assertEqual(created.status_code, 201)
+        exam_id = created.json["id"]
+        added = self.client.post(f"/api/admin/quiz/exams/{exam_id}/questions", json={
+            "text": "1 + 1 bằng mấy?",
+            "options": ["1", "2", "3", "4"],
+            "answer": 1,
+        })
+        self.assertEqual(added.status_code, 201)
+        published = self.client.post(f"/api/admin/quiz/exams/{exam_id}/publish", json={
+            "due_at": None,
+            "student_ids": None,
+        })
+        self.assertEqual(published.status_code, 200)
+
+        public_exam = self.client.get(f"/api/quiz/exams/{exam_id}")
+        self.assertEqual(public_exam.status_code, 200)
+        self.assertNotIn("answer", public_exam.json["questions"][0])
+        unauthenticated = self.app.test_client().post(
+            f"/api/quiz/exams/{exam_id}/submit",
+            json={"answers": {str(added.json["id"]): 1}},
+        )
+        self.assertEqual(unauthenticated.status_code, 401)
+
+        registered = self.register_user("late-student@example.com")
+        self.assertEqual(registered.status_code, 201)
+        submitted = self.client.post(
+            f"/api/quiz/exams/{exam_id}/submit",
+            json={"answers": {str(added.json["id"]): 1}},
+        )
+        self.assertEqual(submitted.status_code, 201)
+        self.assertEqual(submitted.json["score"], 100)
+        self.assertEqual(submitted.json["correct_count"], 1)
+        self.assertEqual(submitted.json["review"][0]["question_id"], added.json["id"])
+        self.assertTrue(submitted.json["review"][0]["correct"])
+        self.assertEqual(submitted.json["review"][0]["correct_answers"], [1])
+        self.assertNotIn(
+            "answer",
+            self.client.get(f"/api/quiz/exams/{exam_id}").json["questions"][0],
+        )
+        retried = self.client.post(
+            f"/api/quiz/exams/{exam_id}/submit",
+            json={"answers": {str(added.json["id"]): 0}},
+        )
+        self.assertEqual(retried.status_code, 201)
+        self.assertTrue(retried.json["updated_existing"])
+        self.assertEqual(retried.json["answers"], {str(added.json["id"]): 0})
+        self.assertEqual(retried.json["score"], 0)
+        self.assertFalse(retried.json["review"][0]["correct"])
+
+        self.login_admin()
+        added_after_submission = self.client.post(
+            f"/api/admin/quiz/exams/{exam_id}/questions",
+            json={
+                "text": "Câu hỏi được thêm sau lần nộp đầu",
+                "options": ["Đúng", "Sai"],
+                "answer": 1,
+            },
+        )
+        self.assertEqual(added_after_submission.status_code, 201)
+        self.assertEqual(self.client.post(
+            f"/api/admin/quiz/exams/{exam_id}/publish",
+            json={"due_at": None, "student_ids": None},
+        ).status_code, 200)
+
+        logged_in = self.client.post("/api/auth/login", json={
+            "email": "late-student@example.com",
+            "password": "StudentPassword123",
+        })
+        self.assertEqual(logged_in.status_code, 200)
+        updated_submission = self.client.post(
+            f"/api/quiz/exams/{exam_id}/submit",
+            json={"answers": {
+                str(added.json["id"]): 1,
+                str(added_after_submission.json["id"]): 1,
+            }},
+        )
+        self.assertEqual(updated_submission.status_code, 201)
+        self.assertTrue(updated_submission.json["updated_existing"])
+        self.assertEqual(updated_submission.json["score"], 100)
+        self.assertEqual(updated_submission.json["correct_count"], 2)
+
+        self.login_admin()
+        statistics = self.client.get("/api/admin/quiz/statistics")
+        self.assertEqual(statistics.status_code, 200)
+        self.assertEqual(statistics.json["summary"]["attempts"], 1)
+        self.assertEqual(statistics.json["summary"]["learners"], 1)
+        self.assertEqual(statistics.json["summary"]["correct_count"], 2)
+        self.assertEqual(statistics.json["summary"]["total_questions"], 2)
+        self.assertEqual(statistics.json["recent"][0]["learner"], "Student")
+        self.assertEqual(statistics.json["recent"][0]["score"], 100)
+        submissions = self.client.get(
+            f"/api/admin/quiz/exams/{exam_id}/submissions"
+        )
+        self.assertEqual(submissions.status_code, 200)
+        self.assertEqual(len(submissions.json), 1)
+        self.assertEqual(
+            submissions.json[0]["answers"],
+            {
+                str(added.json["id"]): 1,
+                str(added_after_submission.json["id"]): 1,
+            },
+        )
+
     def test_quiz_attempts_are_saved_and_summarized_for_admin(self):
         attempt = {
             "examId": "javascript-basics",
-            "title": "JavaScript căn bản",
-            "subject": "JavaScript",
-            "correct": 4,
-            "total": 5,
             "duration": 95,
-            "score": 100,
+            "answers": [1, 2, 1, 2, 2, 1],
         }
         self.assertEqual(self.client.get("/api/admin/quiz/statistics").status_code, 401)
         saved = self.client.post("/api/quiz/attempts", json=attempt)
@@ -249,21 +425,18 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         report = self.client.get("/api/admin/quiz/statistics")
         self.assertEqual(report.status_code, 200)
         self.assertEqual(report.json["summary"]["attempts"], 1)
-        self.assertEqual(report.json["summary"]["average_score"], 80)
+        self.assertEqual(report.json["summary"]["average_score"], 100)
         self.assertEqual(report.json["summary"]["learners"], 0)
         self.assertEqual(report.json["exams"][0]["exam_title"], "JavaScript căn bản")
         self.assertEqual(report.json["recent"][0]["learner"], "Khách")
-        self.assertEqual(report.json["recent"][0]["score"], 80)
+        self.assertEqual(report.json["recent"][0]["score"], 100)
 
     def test_account_data_export_contains_only_the_authenticated_users_data(self):
         self.assertEqual(self.register_user().status_code, 201)
         self.client.post("/api/quiz/attempts", json={
             "examId": "javascript-basics",
-            "title": "JavaScript căn bản",
-            "subject": "JavaScript",
-            "correct": 4,
-            "total": 5,
             "duration": 95,
+            "answers": [1, 2, 1, 2, 2, 1],
         })
         other_client = self.app.test_client()
         other_client.post("/api/auth/register", json={
@@ -273,11 +446,8 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         })
         other_client.post("/api/quiz/attempts", json={
             "examId": "html-foundations",
-            "title": "Nền tảng HTML & CSS",
-            "subject": "HTML & CSS",
-            "correct": 5,
-            "total": 5,
             "duration": 60,
+            "answers": [1, 2, 1, 0, 2],
         })
 
         response = self.client.get("/api/auth/me/data")
@@ -299,11 +469,8 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertEqual(self.register_user().status_code, 201)
         self.client.post("/api/quiz/attempts", json={
             "examId": "javascript-basics",
-            "title": "JavaScript căn bản",
-            "subject": "JavaScript",
-            "correct": 4,
-            "total": 5,
             "duration": 95,
+            "answers": [1, 2, 1, 2, 2, 1],
         })
         self.login_admin()
 
@@ -321,11 +488,8 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.assertEqual(self.register_user().status_code, 201)
         self.client.post("/api/quiz/attempts", json={
             "examId": "javascript-basics",
-            "title": "JavaScript căn bản",
-            "subject": "JavaScript",
-            "correct": 4,
-            "total": 5,
             "duration": 95,
+            "answers": [1, 2, 1, 2, 2, 1],
         })
 
         deleted = self.client.delete("/api/auth/me")
@@ -336,12 +500,12 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
         self.login_admin()
         report = self.client.get("/api/admin/quiz/statistics")
         self.assertEqual(report.json["summary"]["attempts"], 1)
-        self.assertEqual(report.json["summary"]["average_score"], 80)
-        self.assertEqual(report.json["summary"]["correct_count"], 4)
-        self.assertEqual(report.json["summary"]["total_questions"], 5)
+        self.assertEqual(report.json["summary"]["average_score"], 100)
+        self.assertEqual(report.json["summary"]["correct_count"], 6)
+        self.assertEqual(report.json["summary"]["total_questions"], 6)
         self.assertEqual(report.json["exams"][0]["attempts"], 1)
-        self.assertEqual(report.json["exams"][0]["average_score"], 80)
-        self.assertEqual(report.json["exams"][0]["best_score"], 80)
+        self.assertEqual(report.json["exams"][0]["average_score"], 100)
+        self.assertEqual(report.json["exams"][0]["best_score"], 100)
         self.assertEqual(report.json["recent"], [])
         with self.app.app_context():
             from models import get_database
@@ -373,11 +537,8 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
     def test_expired_quiz_attempts_are_archived_by_the_retention_command(self):
         self.client.post("/api/quiz/attempts", json={
             "examId": "javascript-basics",
-            "title": "JavaScript căn bản",
-            "subject": "JavaScript",
-            "correct": 4,
-            "total": 5,
             "duration": 95,
+            "answers": [1, 2, 1, 2, 2, 1],
         })
         with self.app.app_context():
             from models import get_database
@@ -436,7 +597,7 @@ class AuthenticationAndCourseApiTests(unittest.TestCase):
             "total": 5,
             "duration": 60,
         })
-        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(invalid.status_code, 404)
         self.register_user()
         self.assertEqual(self.client.get("/api/admin/quiz/statistics").status_code, 403)
 

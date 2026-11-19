@@ -58,7 +58,7 @@
         </section>
 
         <section class="analytics-section" aria-labelledby="analyticsHeading">
-          <div class="section-heading-row"><div><p class="eyebrow">THEO DÕI TIẾN BỘ</p><h2 id="analyticsHeading">Thống kê kết quả thi</h2><p class="analytics-intro">Tổng hợp điểm số và số câu đúng/chưa đúng từ lịch sử làm bài được lưu trên trình duyệt này.</p><p class="analytics-intro privacy-notice">Khi nộp bài, Eduhub lưu đề, điểm, thời lượng và thời điểm; lượt thi gắn với tài khoản nếu bạn đăng nhập, nếu không sẽ là lượt khách. Dữ liệu chi tiết được giữ 365 ngày, sau đó gộp theo tháng và đề thi để giữ thống kê mà không lưu từng lượt. Lịch sử trên trình duyệt được lưu riêng tối đa 20 lượt; bạn có thể xóa trong cài đặt dữ liệu của trình duyệt.</p></div></div>
+          <div class="section-heading-row"><div><p class="eyebrow">THEO DÕI TIẾN ĐỘ</p><h2 id="analyticsHeading">Thống kê kết quả thi</h2><p class="analytics-intro">Tổng hợp điểm số và số câu đúng/chưa đúng từ lịch sử làm bài được lưu trên trình duyệt này.</p><p class="analytics-intro privacy-notice">Khi nộp bài, Eduhub lưu đề, điểm, thời lượng và thời điểm; lượt thi gắn với tài khoản nếu bạn đăng nhập, nếu không sẽ là lượt khách. Dữ liệu chi tiết được giữ 365 ngày, sau đó gộp theo tháng và đề thi để giữ thống kê mà không lưu từng lượt. Lịch sử trên trình duyệt được lưu riêng tối đa 3 lượt gần nhất; bạn có thể xóa trong cài đặt dữ liệu của trình duyệt.</p></div></div>
           <div id="analyticsContent" class="analytics-content" aria-live="polite"><p class="analytics-empty">Đang tải thống kê...</p></div>
         </section>
       </section>
@@ -67,6 +67,7 @@
         <div class="session-topline"><button id="exitExamBtn" class="text-button" type="button">← Thoát bài thi</button><div class="timer" id="examTimer" role="timer" aria-live="off"><span aria-hidden="true">◷</span> <span id="timerValue">00:00</span></div></div>
         <div class="session-heading"><div><p id="sessionSubject" class="eyebrow">CHỦ ĐỀ</p><h1 id="sessionTitle">Bài thi trắc nghiệm</h1></div><div class="progress-copy"><strong id="questionProgress">Câu 1 / 5</strong><span id="answeredProgress">0 câu đã trả lời</span></div></div>
         <div class="progress-track" role="progressbar" aria-label="Tiến độ bài thi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressBar"></span></div>
+        <p id="submitError" class="session-error is-hidden" role="alert"></p>
         <div class="session-layout">
           <article class="question-panel">
             <div class="question-meta"><span id="questionNumber" class="question-number">CÂU 01</span><span class="question-type">Chọn một đáp án</span></div>
@@ -78,7 +79,7 @@
             <div class="rail-heading"><h2>Phiếu trả lời</h2><span id="railAnsweredCount">0/5</span></div>
             <p>Chọn số câu để di chuyển nhanh.</p>
             <div id="questionNavigator" class="question-navigator"></div>
-            <div class="rail-legend"><span><i class="legend-current"></i>Đang làm</span><span><i class="legend-done"></i>Đã chọn</span></div>
+            <div class="rail-legend"><span><i class="legend-current"></i>Đang xem</span><span><i class="legend-answered"></i>Đã trả lời</span><span><i class="legend-unanswered"></i>Chưa trả lời</span></div>
             <button id="submitExamBtn" class="button button-submit" type="button">Nộp bài ↗</button>
           </aside>
         </div>

@@ -28,12 +28,16 @@ from PIL import Image, UnidentifiedImageError
 from models import (
     create_course,
     create_book,
+    create_quiz_exam,
+    create_quiz_question,
     create_user,
     count_books,
     count_admin_accounts,
     create_quiz_attempt,
     delete_book,
     delete_course,
+    delete_quiz_exam,
+    delete_quiz_question,
     delete_user_and_archive_attempts,
     find_user_by_email,
     get_account_data,
@@ -41,6 +45,13 @@ from models import (
     get_course_by_id,
     get_database,
     get_quiz_statistics,
+    get_quiz_exam,
+    list_quiz_exams,
+    list_assigned_quiz_exams,
+    submit_quiz_submission,
+    list_quiz_submissions,
+    grade_quiz_submission,
+    publish_quiz_exam,
     get_user_by_id,
     hash_password,
     list_accounts,
@@ -50,6 +61,8 @@ from models import (
     public_account,
     update_book,
     update_course,
+    update_quiz_exam,
+    update_quiz_question,
     valid_email,
     validate_book,
     validate_course,
@@ -502,26 +515,291 @@ def admin_quiz_statistics():
     return jsonify(get_quiz_statistics())
 
 
+@api_routes.get("/api/quiz/exams")
+def public_quiz_exams():
+    return jsonify([
+        exam for exam in list_quiz_exams()
+        if exam.get("status") == "published"
+    ])
+
+
+@api_routes.get("/api/quiz/exams/<exam_id>")
+def public_quiz_exam(exam_id):
+    exam = get_quiz_exam(exam_id)
+    if not exam:
+        return api_error("Không tìm thấy đề thi.", 404)
+    if exam.get("status") != "published":
+        return api_error("Đề thi chưa được xuất bản.", 403)
+    if not exam["questions"]:
+        return api_error("Đề thi chưa có câu hỏi.", 400)
+    return jsonify(exam)
+
+
+@api_routes.get("/api/admin/quiz/exams")
+@admin_required
+def admin_quiz_exams():
+    return jsonify(list_quiz_exams(include_questions=True))
+
+
+def validate_quiz_exam_payload(data):
+    if not isinstance(data, dict):
+        return None, "Dữ liệu đề thi không hợp lệ."
+    title = data.get("title", "")
+    subject = data.get("subject", "")
+    difficulty = data.get("difficulty", "Cơ bản")
+    duration = data.get("duration")
+    description = data.get("description", "")
+    due_at = data.get("due_at")
+    status = data.get("status", "draft")
+    shuffle_questions = data.get("shuffle_questions", False)
+    if not all(isinstance(value, str) for value in (title, subject, difficulty, description)):
+        return None, "Thông tin đề thi phải có giá trị dạng chuỗi."
+    if status not in {"draft", "published"}:
+        return None, "Trạng thái đề thi không hợp lệ."
+    if due_at is not None and not isinstance(due_at, str):
+        return None, "Hạn nộp không hợp lệ."
+    if type(shuffle_questions) is not bool:
+        return None, "Tùy chọn xáo trộn không hợp lệ."
+    title = title.strip()
+    subject = subject.strip()
+    description = description.strip()
+    difficulty = difficulty.strip()
+    if not title or len(title) > 100 or not subject or len(subject) > 60:
+        return None, "Tên đề thi hoặc môn học không hợp lệ."
+    if type(duration) is not int or not 1 <= duration <= 300:
+        return None, "Thời lượng đề thi không hợp lệ."
+    if len(description) > 500:
+        return None, "Mô tả đề thi không được vượt quá 500 ký tự."
+    return {
+        "title": title,
+        "subject": subject,
+        "difficulty": difficulty or "Cơ bản",
+        "duration": duration,
+        "description": description,
+        "status": status,
+        "due_at": due_at.strip() if isinstance(due_at, str) and due_at.strip() else None,
+        "shuffle_questions": shuffle_questions,
+    }, None
+
+
+@api_routes.post("/api/admin/quiz/exams")
+@admin_required
+def create_quiz_exam_route():
+    data = json_payload()
+    exam, error = validate_quiz_exam_payload(data)
+    if error:
+        return api_error(error, 400)
+    exam_id = str(data.get("id", "")).strip()
+    if not exam_id:
+        exam_id = uuid.uuid4().hex
+    if len(exam_id) > 100:
+        return api_error("Mã đề thi không hợp lệ.", 400)
+    exam["id"] = exam_id
+    try:
+        create_quiz_exam(exam)
+    except sqlite3.IntegrityError:
+        return api_error("Mã đề thi đã tồn tại.", 409)
+    return jsonify(get_quiz_exam(exam_id)), 201
+
+
+@api_routes.put("/api/admin/quiz/exams/<exam_id>")
+@admin_required
+def update_quiz_exam_route(exam_id):
+    exam, error = validate_quiz_exam_payload(json_payload())
+    if error:
+        return api_error(error, 400)
+    if not update_quiz_exam(exam_id, exam):
+        return api_error("Không tìm thấy đề thi.", 404)
+    return jsonify(get_quiz_exam(exam_id))
+
+
+@api_routes.delete("/api/admin/quiz/exams/<exam_id>")
+@admin_required
+def delete_quiz_exam_route(exam_id):
+    if not delete_quiz_exam(exam_id):
+        return api_error("Không tìm thấy đề thi.", 404)
+    return jsonify({"message": "Đã xóa đề thi."})
+
+
+@api_routes.post("/api/admin/quiz/exams/<exam_id>/publish")
+@admin_required
+def publish_quiz_exam_route(exam_id):
+    data = json_payload()
+    due_at = data.get("due_at")
+    student_ids = data.get("student_ids")
+    if due_at is not None and not isinstance(due_at, str):
+        return api_error("Hạn nộp không hợp lệ.", 400)
+    if student_ids is not None:
+        if not isinstance(student_ids, list) or any(type(student_id) is not int for student_id in student_ids):
+            return api_error("Danh sách học sinh không hợp lệ.", 400)
+    try:
+        published = publish_quiz_exam(exam_id, due_at or None, student_ids)
+    except ValueError as error:
+        return api_error(str(error), 400)
+    if not published:
+        return api_error("Không tìm thấy đề thi.", 404)
+    return jsonify(get_quiz_exam(exam_id))
+
+
+def validate_quiz_question_payload(data):
+    if not isinstance(data, dict):
+        return None, "Dữ liệu câu hỏi không hợp lệ."
+    text = data.get("text", "")
+    options = data.get("options")
+    answer = data.get("answer")
+    answers = data.get("answers")
+    answer_key = data.get("answer_key", "")
+    explanation = data.get("explanation", "")
+    question_type = data.get("type", "single_choice")
+    points = data.get("points", 1)
+    required = data.get("required", True)
+    if question_type not in {"single_choice", "multiple_choice", "true_false", "essay"}:
+        return None, "Loại câu hỏi không hợp lệ."
+    if type(points) is not int or not 1 <= points <= 100:
+        return None, "Điểm câu hỏi không hợp lệ."
+    if type(required) is not bool:
+        return None, "Thiết lập bắt buộc không hợp lệ."
+    if not isinstance(text, str) or not isinstance(explanation, str):
+        return None, "Nội dung câu hỏi phải có giá trị dạng chuỗi."
+    if not isinstance(answer_key, str) or len(answer_key) > 2000:
+        return None, "Đáp án tự luận không hợp lệ."
+    answer_key = answer_key.strip()
+    if question_type == "essay" and not answer_key:
+        return None, "Câu tự luận cần đáp án mẫu để tự chấm."
+    text = text.strip()
+    explanation = explanation.strip()
+    if not text or len(text) > 1000:
+        return None, "Nội dung câu hỏi không hợp lệ."
+    if question_type in {"essay"}:
+        options = options if isinstance(options, list) else []
+    elif not isinstance(options, list) or not 2 <= len(options) <= 6:
+        return None, "Câu hỏi cần từ 2 đến 6 đáp án."
+    if question_type != "essay" and any(not isinstance(option, str) or not option.strip() or len(option.strip()) > 500 for option in options):
+        return None, "Các đáp án không hợp lệ."
+    if question_type == "single_choice" and (type(answer) is not int or not 0 <= answer < len(options)):
+        return None, "Đáp án đúng không hợp lệ."
+    if question_type == "multiple_choice":
+        if not isinstance(answers, list) or not answers or any(type(value) is not int or value < 0 or value >= len(options) for value in answers):
+            return None, "Các đáp án đúng không hợp lệ."
+        if len(set(answers)) != len(answers):
+            return None, "Các đáp án đúng không được trùng."
+    if question_type == "true_false" and type(answer) is not int or answer not in {0, 1}:
+        return None, "Đáp án đúng/sai không hợp lệ."
+    if len(explanation) > 1000:
+        return None, "Giải thích không được vượt quá 1000 ký tự."
+    return {
+        "text": text,
+        "options": [option.strip() for option in options],
+        "answer": answer,
+        "explanation": explanation,
+        "type": question_type,
+        "answers": answers if isinstance(answers, list) else [],
+        "points": points,
+        "answer_key": answer_key,
+        "required": required,
+    }, None
+
+
+@api_routes.post("/api/admin/quiz/exams/<exam_id>/questions")
+@admin_required
+def create_quiz_question_route(exam_id):
+    if not get_quiz_exam(exam_id):
+        return api_error("Không tìm thấy đề thi.", 404)
+    question, error = validate_quiz_question_payload(json_payload())
+    if error:
+        return api_error(error, 400)
+    question_id = create_quiz_question(exam_id, question)
+    return jsonify({"id": question_id, "message": "Đã thêm câu hỏi."}), 201
+
+
+@api_routes.put("/api/admin/quiz/exams/<exam_id>/questions/<int:question_id>")
+@admin_required
+def update_quiz_question_route(exam_id, question_id):
+    question, error = validate_quiz_question_payload(json_payload())
+    if error:
+        return api_error(error, 400)
+    if not update_quiz_question(question_id, exam_id, question):
+        return api_error("Không tìm thấy câu hỏi.", 404)
+    return jsonify({"id": question_id, "message": "Đã cập nhật câu hỏi."})
+
+
+@api_routes.delete("/api/admin/quiz/exams/<exam_id>/questions/<int:question_id>")
+@admin_required
+def delete_quiz_question_route(exam_id, question_id):
+    if not delete_quiz_question(question_id, exam_id):
+        return api_error("Không tìm thấy câu hỏi.", 404)
+    return jsonify({"message": "Đã xóa câu hỏi."})
+
+
+@api_routes.post("/api/quiz/exams/<exam_id>/submit")
+@login_required
+def submit_assigned_quiz_exam(exam_id):
+    if g.current_user["role"] != "user":
+        return api_error("Chỉ học sinh mới được nộp bài thi.", 403)
+    data = json_payload()
+    submission, error = submit_quiz_submission(
+        exam_id, g.current_user["id"], data.get("answers")
+    )
+    if error:
+        status = 409 if "đã được nộp" in error or "quá hạn" in error else 403
+        return api_error(error, status)
+    return jsonify(submission), 201
+
+
+@api_routes.get("/api/admin/quiz/exams/<exam_id>/submissions")
+@admin_required
+def admin_quiz_submissions(exam_id):
+    if not get_quiz_exam(exam_id):
+        return api_error("Không tìm thấy đề thi.", 404)
+    submissions = list_quiz_submissions(exam_id)
+    return jsonify(submissions)
+
+
+@api_routes.put("/api/admin/quiz/submissions/<int:submission_id>/grade")
+@admin_required
+def grade_quiz_submission_route(submission_id):
+    data = json_payload()
+    manual_score = data.get("manual_score")
+    comment = data.get("comment", "")
+    if type(manual_score) is not int or manual_score < 0:
+        return api_error("Điểm chấm không hợp lệ.", 400)
+    if not grade_quiz_submission(submission_id, manual_score, comment):
+        return api_error("Không tìm thấy bài nộp.", 404)
+    return jsonify({"message": "Đã chấm bài.", "manual_score": manual_score})
+
+
 @api_routes.post("/api/quiz/attempts")
 def save_quiz_attempt():
     data = json_payload()
     exam_id = str(data.get("examId", "")).strip()
-    exam_title = str(data.get("title", "")).strip()
-    subject = str(data.get("subject", "")).strip()
-    correct_count = data.get("correct")
-    total_questions = data.get("total")
     duration_seconds = data.get("duration")
+    submitted_answers = data.get("answers")
 
     if not exam_id or len(exam_id) > 100:
         return api_error("Mã đề thi không hợp lệ.", 400)
-    if not exam_title or len(exam_title) > 100 or not subject or len(subject) > 60:
-        return api_error("Thông tin đề thi không hợp lệ.", 400)
-    if type(total_questions) is not int or not 1 <= total_questions <= 200:
-        return api_error("Số câu hỏi không hợp lệ.", 400)
-    if type(correct_count) is not int or not 0 <= correct_count <= total_questions:
-        return api_error("Số câu đúng không hợp lệ.", 400)
     if type(duration_seconds) is not int or not 0 <= duration_seconds <= 18000:
         return api_error("Thời gian làm bài không hợp lệ.", 400)
+    exam = get_quiz_exam(exam_id, include_answers=True)
+    if not exam:
+        return api_error("Không tìm thấy đề thi.", 404)
+    if not exam["questions"]:
+        return api_error("Đề thi chưa có câu hỏi.", 400)
+    if not isinstance(submitted_answers, list) or len(submitted_answers) != len(exam["questions"]):
+        return api_error("Danh sách đáp án không hợp lệ.", 400)
+
+    correct_count = 0
+    for question, submitted_answer in zip(exam["questions"], submitted_answers):
+        if submitted_answer is not None:
+            if type(submitted_answer) is not int:
+                return api_error("Đáp án không hợp lệ.", 400)
+            if not 0 <= submitted_answer < len(question["options"]):
+                return api_error("Đáp án không hợp lệ.", 400)
+            if submitted_answer == question["answer"]:
+                correct_count += 1
+
+    exam_title = exam["title"]
+    subject = exam["subject"]
+    total_questions = len(exam["questions"])
 
     user_id = session.get("user_id")
     if user_id and not get_user_by_id(user_id):
@@ -534,7 +812,26 @@ def save_quiz_attempt():
         "total_questions": total_questions,
         "duration_seconds": duration_seconds,
     }, user_id)
-    return jsonify({"id": attempt_id, "message": "Đã lưu kết quả bài thi."}), 201
+    score = round(correct_count / total_questions * 100)
+    review = []
+    for question, submitted_answer in zip(exam["questions"], submitted_answers):
+        selected = submitted_answer if type(submitted_answer) is int else None
+        review.append({
+            "text": question["text"],
+            "options": question["options"],
+            "selected": selected,
+            "answer": question["answer"],
+            "explanation": question["explanation"],
+        })
+    return jsonify({
+        "id": attempt_id,
+        "message": "Đã lưu kết quả bài thi.",
+        "correct": correct_count,
+        "total": total_questions,
+        "score": score,
+        "duration": duration_seconds,
+        "review": review,
+    }), 201
 
 
 @api_routes.post("/api/admin/users")
